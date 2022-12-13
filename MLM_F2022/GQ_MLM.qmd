@@ -1,0 +1,748 @@
+---
+title: "GradQuant: Multilevel and Mixed-Effects Modeling"
+format:
+  revealjs:
+    toc-depth: 2
+    self-contained: true
+    citations-hover: true
+    code-link: true
+    code-block-bg: "#272822"
+    css: "./assets/slide-style.css"
+editor: visual
+width: 1360
+height: 800
+echo: true
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+```
+
+# Introduction
+
+------------------------------------------------------------------------
+
+## Hierarchical data structure
+
+-   Students at first-level, schools at second-level, districts at third-level
+
+-   Can also refer to cients in therapists, classrooms in schools, employees in organization, people in family, measurements in person, citizens in country
+
+![](images/Screen%20Shot%202022-10-03%20at%209.52.37%20PM.png)
+
+## Questions
+
+1.  What is another name for multilevel models?
+
+2.  In a data structure where data is collected for people multiple times, what is the level-1 unit? What is the level-2 unit?
+
+## Answers
+
+1.  Mixed-effects models
+
+2.  Measurement occassions; People
+
+## Read Data
+
+Let's load a dataset from Ch. 3 of Heck, R. H., Thomas, S. L., & Tabata, L. N. (2011). *Multilevel and Longitudinal Modeling with IBM SPSS*: Taylor & Francis.
+
+Datasets can be pretty large for multilevel data so I generally favor more efficient data reading functions like read_csv or fread
+
+```{r}
+df <- data.table::fread("~/Documents/GitHub/MLM_GQ-F2022-WS/heck2011.csv")
+```
+
+## Inspect Data
+
+Let's inspect the data. One thing that is immediately apparent is that "schcode" for school is repeated for multiple observations whereas each "id" for student is distinct/unique. This shows that there are repeated observations of students within each school.
+
+```{r}
+head(df, n=50)
+```
+
+## General Linear Model
+
+-   Assumes residuals are uncorrelated
+
+-   Observations are assumed as independent
+
+-   Effects are independent
+
+    Formula: $math_{ij}=β_{0}+β_{1}X_{i}+\epsilon_{i}$
+
+## Ordinary Least Squares Model
+
+```{r}
+OLS <- lm(math ~ ses, data = df)
+summary(OLS)
+```
+
+## General Linear Model (continued)
+
+So those t-statistics and p-values suggest that SES has an effect that should not be observed given that the null is true, right? Let's see if the effect differs between girls and boys.
+
+```{r}
+OLS_Multiple <- lm(math ~ ses * female, data = df)
+summary(OLS_Multiple)
+```
+
+------------------------------------------------------------------------
+
+```{r}
+sjPlot::plot_model(OLS_Multiple, type = "pred", terms = c("ses", "female"))
+```
+
+------------------------------------------------------------------------
+
+## Ordinary Least Squares Fixed Effects Model Plotted
+
+There's not much of a difference in the effect of SES between boys and girls.
+
+```{r}
+df %>% 
+  ggplot(mapping = aes(x = ses, y = math )) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, fullrange = TRUE)
+```
+
+------------------------------------------------------------------------
+
+Can you identify an issues with modeling this data using the previous approach?
+
+------------------------------------------------------------------------
+
+We treat all schools as if they have the same slopes and intercepts, which surely all schools do not have the same average math achievement score or effect of SES on math achievement, right?
+
+This is the problem of non-independence: Some schools may have higher/lower math achievements, or the association of gender with math achievement may differ between schools.
+
+------------------------------------------------------------------------
+
+We can use a neat package called performance to inspect the GLM assumptions, as well.
+
+```{r}
+# install.packages(performance)
+performance::check_model(OLS_Multiple)
+```
+
+------------------------------------------------------------------------
+
+## All Slopes and Intercepts Plotted by Schools
+
+```{r}
+df %>% 
+  ggplot(mapping = aes(x = ses, y = math, colour = factor(schcode))) +
+  geom_point() +
+  geom_smooth(mapping = aes(group = schcode), method = "lm", se = FALSE, fullrange = TRUE) +
+  labs(colour = "schcode") +
+  theme(legend.position="none")
+```
+
+## Simpson's Paradox
+
+"a paradox in which a correlation (trend) present in different groups is reversed when the groups are combined."
+
+![](images/Simpsons_paradox_-_animation.gif)
+
+## Nonindependence
+
+Clustering of individual data points nested within higher units. OLS regression assumes observations are independently distributed
+
+## Standard Errors
+
+Ignoring hierarchical structure and examining data as disaggregated will lead to standard errors being underestimated, overestimation of statistical significance.
+
+------------------------------------------------------------------------
+
+### Why are standard errors biased downwards by disaggregating?
+
+::: {style="font-size: .8em"}
+-   Using the total sample size assumes that each individual contributes unique information
+-   This is not the case with clustering, so the denominator (N) will be too large
+    -   If I know Timmy's reading score and know that Tommy is in the same school as Timmy, I already know a little bit about Tommy's score too
+
+    -   The unique contribution of each student is reduced because some information is shared by knowing which school they are in
+:::
+
+![](images/Screen%20Shot%202022-10-25%20at%209.49.24%20PM.png){width="317"}
+
+------------------------------------------------------------------------
+
+### Why is this a problem?
+
+Inflated risk of Type 1 Error! We think SE is smaller than it is if we assume observations are independent and that it's 100 cases, instead of 10 cases of 10...
+
+$t = \frac{b}{SE}$
+
+$SE=\frac{\sigma}{\sqrt{N}}$
+
+------------------------------------------------------------------------
+
+What does non-independence refer to and why is it a problem?
+
+------------------------------------------------------------------------
+
+## Theoretical/Conceptual Interest in Group-Level Effects
+
+-   Perhaps you are interested in the effect of school characteristics on student academic performance...
+    -   Or the individual's personality on changes in cognitive control across years...
+-   Such questions would require a multilevel approach, whereby a level-1 outcome is regressed onto a level-2 predictor.
+-   This could be taken a step further, examining cross-level interactions.
+    -   How does the socioeconomic status of the student interact with the resources of the school to predict student academic performance?
+
+## General Linear [Mixed]{.underline} Model
+
+-   Residuals may be correlated
+-   Observations not assumed independent
+-   Random effects model additional sources of variation
+
+## Why **MIXED**?
+
+::: {style="font-size: .8em; text-align: center"}
++-------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Fixed Effects                                                                                                                       | Random Effects                                                                                                                                           |
++=====================================================================================================================================+==========================================================================================================================================================+
+| -   Population level (i.e., average) effects that should persist across studies/samples                                             | -   Trends vary across levels of some grouping factor (e.g., participants or items)                                                                      |
+| -   Condition/treatment/intervention effect are typically fixed as they operate in "average" or "typical" ways that are predictable | -   Clusters of dependent datapoints in which the component observations come from the same higher-level group (e.g., an individual participant or item) |
+| -   Think of it as the [*typical*]{.underline} effects                                                                              | -   Account for the fact that observations may behave differently from the average trend                                                                 |
+|                                                                                                                                     | -   Think of it as the [*deviation/difference*]{.underline} from the typical effects                                                                     |
++-------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------+
+:::
+
+------------------------------------------------------------------------
+
+What is "mixed" in a mixed model?
+
+------------------------------------------------------------------------
+
+How are fixed and random effects different?
+
+------------------------------------------------------------------------
+
+## Modeling Random Effects
+
+Do you expect there to be variation in the intercept (i.e., average) between schools?
+
+Do you expect there to be variation in the effect of X on Y (i.e., slopes) between schools?
+
+![](images/1_05VKi1OBKuxw-74IQk9EIA.png){fig-align="center"}
+
+## Random Effects in Colloquial Terms
+
+-   "Random effects" == "by-school varying intercepts and slopes"
+
+    -   In estimating the random effects, you allow intercepts and/or slopes to vary
+
+-   Do we expect the schools to have different averages in math achievement? Then, we should model a random-intercept model.
+
+    -   Fixed effects intercept estimates the average intercept per school, while the random-intercept estimates the deviation of each school from that average.
+
+-   Do we expect the schools to differ in their effects of gender on math achievement? Then, we should model a random-slope model.
+
+    -   Fixed effects slope estimates the average effect of gender on math achievement per school, while the random-slope estimates the deviation of that effect from average across schools.
+
+------------------------------------------------------------------------
+
+When or why do we need a random intercept? When or why do we need a random slope?
+
+# Implementing Mixed Models
+
+## Load Mixed Model Package
+
+lme4 is likely the most popular and widely used package for mixed-effects modeling in R. lmerTest estimates the degrees of freedom for each parameter in order to conduct hypothesis/significance testing.
+
+```{r}
+library(lme4)
+library(lmerTest)
+```
+
+## Null Model
+
+We can begin with a null model, sometimes called the intercept-only model. In this model, we simply model the DV with no regressors. We're estimating residual variance for Level-1 and Level-2, but no predictors.
+
+**Level 1:** $math_{ij}=β_{0j}+R_{ij}$
+
+**Level 2:** $β_{0j}=γ_{00}+U_{0j}$
+
+**Combined:** $math_{ij}=γ_{00}+U_{0j}+R_{ij}$
+
+------------------------------------------------------------------------
+
+The elements in the parentheses represent the random effects. On right side of the vertical line is the random factor(s) (i.e. schools). On the left side are the random slopes for the fixed effects (i.e. random variation in the effect of each subject's slope). Outside of parentheses are the fixed effects. This is a null model so you have a 1 to denote no fixed effects besides an intercept.
+
+The random intercept allows us to account for variability in participant averages.
+
+```{r}
+GLMM.Null <- lmer(math ~ 1 + (1 | schcode), data = df)
+```
+
+------------------------------------------------------------------------
+
+If you see above under random effects, you'll notice that there are random effects statistics reported for both schools and residuals. You can understand these random effects as reflecting the between-school variance and the school-subjects variance respectively.
+
+```{r}
+summary(GLMM.Null)
+```
+
+------------------------------------------------------------------------
+
+## How much clustering do we have?
+
+ICCs can tell us if a mixed model is justified. It is the quotient of the variance between clusters to the total variance. Can be interpreted as (1) the proportion of variance in the outcome that is attributable to clusters or (2) the expected correlation between the outcome from randomly selected units from a randomly selected cluster.
+
+```{r}
+# install.packages("performance")
+performance::icc(GLMM.Null)
+```
+
+## Calculate ICC manually
+
+Level 2 Variance (i.e. Residual Variance) / (Total Variance i.e. \[Random Intercept Variance + Residual Variance\])
+
+$\frac{\tau^2_{0} }{\tau^2_{0} + \sigma^2}$
+
+```{r}
+vars <- as.data.frame(VarCorr(GLMM.Null,comp="Variance"))[1:2,4]
+vars
+vars[1] / sum(vars)
+```
+
+------------------------------------------------------------------------
+
+What does an intraclass correlation coefficient tell us (in the context of MLMs)?
+
+------------------------------------------------------------------------
+
+## Level 1 Predictor with Varying Intercepts, Fixed Slopes
+
+We can move to the next step and model the effect of student-level SES on student-level math achievement, allowing the intercept to vary between schools. This means that each school is allowed to have a different mean for math achievement for SES = 0.
+
+```{r}
+GLMM.L1SES <- lmer(math ~ ses + (1 | schcode), data = df)
+summary(GLMM.L1SES)
+```
+
+------------------------------------------------------------------------
+
+### Is the fixed effect of SES with varying-intercepts supported?
+
+We can perform a Likelihood Ratio Test (LRT) to test whether a model with an effect outperforms a model without an effect, otherwise called "nested models". This compares the likelihood of the data under each model, hence the name. A small p-value, or higher Chi-Square, lower deviance, BIC, or AIC will all reflect that the full model performs better than the simpler model.
+
+```{r}
+anova(GLMM.Null, GLMM.L1SES)
+```
+
+------------------------------------------------------------------------
+
+### What proportion of L1 variance explained by additional parameters?
+
+If we divide the difference between our null model's level-1 variance (i.e., residual variance) and this new model's (l1) level-1 variance by the null model variance, we can see what proportion of variance was reduced.
+
+```{r}
+N <- sigma(GLMM.Null)^2
+L1 <- sigma(GLMM.L1SES)^2
+
+prop <- (N - L1) / N
+paste0("We reduced about ", round(prop,3), " of level 1 variance")
+```
+
+------------------------------------------------------------------------
+
+**Level 1:** $math_{ij}=β_{0j}+B_{1j}SES_{1j}+R_{ij}$
+
+**Level 2:** $β_{0j}=γ_{00}+U_{0j}$ & $β_{1j}=γ_{10}$
+
+**Combined:** $math_{ij}=γ_{00}+γ_{10}SES_{ij}+U_{0j}+R_{ij}$
+
+------------------------------------------------------------------------
+
+1.  the fixed effect for the intercept, controlling for `ses`; $γ_{00}$
+
+2.  the fixed effect for the slope of `ses`; $γ_{10}$
+
+3.  a random effect for the intercept capturing the variance of schools around the intercept $\tau^{2}_{0}$, controlling for `ses`. Every school has residuals around the intercept $U_{0J}$
+
+4.  a random effect capturing the variance of students around their school mean math achievement, controlling for `ses`. $\sigma^2$
+
+------------------------------------------------------------------------
+
+```{r}
+summary(GLMM.L1SES)
+```
+
+## Level 1 Predictor with Varying Intercepts, Varying Slopes
+
+As shown in the earlier plot, it's quite reasonable to assume that the effect of SES may vary between schools. Let's test it:
+
+```{r}
+GLMM.L1SESV <- lmer(math ~ ses + (ses | schcode), data = df)
+```
+
+------------------------------------------------------------------------
+
+### A Brief Detour on "Implicit" Intercepts
+
+Note that a 1 denotes an intercept, and there is an "implicit" or "default" 1 outside the parentheses and inside the parentheses. This is equivalent to the prior formula syntax but is more "explicit".
+
+```{r}
+GLMM.L1SESV <- lmer(math ~ 1 + ses + (1 + ses | schcode), data = df)
+summary(GLMM.L1SESV)
+```
+
+------------------------------------------------------------------------
+
+If you wanted to remove the intercept for your fixed effects and the intercept for your random effects (not recommended), you would replace these "default" 1s with 0s. You can see below that there is no longer an "(Intercept)" under random effects or fixed effects.
+
+```{r}
+GLMM.L1SESV <- lmer(math ~ 0 + ses + (0 + ses | schcode), data = df)
+summary(GLMM.L1SESV)
+```
+
+------------------------------------------------------------------------
+
+### A Brief Detour on Singular Fit
+
+Fitting this model with a random slope for SES, you may notice the warning, "boundary (singular) fit: see help('isSingular')". This occurs when one of your random effects parameters (as seen in your VCOV matrix) is essentially near 0, which can be due to the parameter being actually approximately 0 or because of multicollinearity.
+
+```{r}
+GLMM.L1SESV <- lmer(math ~ ses + ( ses | schcode), data = df)
+```
+
+------------------------------------------------------------------------
+
+Let's inspect the variance-covariance matrix and the random effects. The VCOV shows no variances near 0. But the random effects correlation shows a -1.0 correlation.
+
+```{r}
+Matrix::bdiag(VarCorr(GLMM.L1SESV))
+summary(GLMM.L1SESV)$varcor
+```
+
+------------------------------------------------------------------------
+
+What should we inspect if we observe a "singular fit"?
+
+------------------------------------------------------------------------
+
+We can attempt to fix the singular fit by removing this perfect correlation. Specifying the random intercept for schools (1 \| schcode) and the random slope of SES for schools as separate (0 + SES \| schcode) removes the correlation. Voila! The perfect correlation is gone and singularity is fixed!
+
+```{r}
+GLMM.L1SESV <- lmer(math ~ ses + ( 1 | schcode) + (0 + ses | schcode), data = df)
+summary(GLMM.L1SESV)
+```
+
+------------------------------------------------------------------------
+
+**Level 1:** $math_{ij}=β_{0j}+B_{1j}SES_{1j}+R_{ij}$
+
+**Level 2:** $β_{0j}=γ_{00}+γ_{01}public_{j}+U_{0j}$ & $β_{1j}=γ_{10} + U_{1j}$
+
+**Combined:** $math_{ij}=γ_{00}+γ_{10}public_{j}+γ_{10}SES_{ij}+U_{0j}+U_{1j}SES_{1j}+R_{ij}$
+
+------------------------------------------------------------------------
+
+1.  the fixed effect for the intercept, controlling for `ses`; $γ_{00}$
+
+2.  the fixed effect for the slope of `ses`; $γ_{10}$
+
+3.  a random effect capturing the variance of students around their school's mean math achievement, controlling for `ses`; $\sigma^{2}$
+
+4.  a random effect for the intercept capturing the variance of schools around the intercept, controlling for `ses`; $\tau^{2}_{0}$
+
+5.  a random effect for the slope capturing variance of school slopes around the grand mean slope, controlling for `ses`; $\tau^{2}_{1}$
+
+6.  a random effect covariance capturing how the intercept variance and slope variance relate to each other; $\tau_{01}$
+
+------------------------------------------------------------------------
+
+```{r}
+summary(GLMM.L1SESV)
+```
+
+------------------------------------------------------------------------
+
+## Modeling a L2 Predictor
+
+In a multilevel model, we don't have to only model predictors that vary across level-1 units, but can also model predictors that are the same across level-1 units but differ across level-2 (or level-3, or level-4 units). Here, that would be depicted as school-level units. Let's focus on the categorical variable of whether the schools were public or private.
+
+```{r}
+GLMM.L1SESV.L2PUB <- lmer(math ~ 1 + ses + public + (ses|schcode), data = df)
+```
+
+------------------------------------------------------------------------
+
+**Level 1:** $math_{ij}=β_{0j}+B_{1j}SES_{1j}+R_{ij}$
+
+**Level 2:** $β_{0j}=γ_{00}+γ_{01}public_{j}+U_{0j}$ & $β_{1j}=γ_{10}+U_{1j}$
+
+**Combined:** $math_{ij}=γ_{00}+γ_{10}public_{j}+γ_{10}SES_{ij}+U_{0j}+U_{1jSESj}+R_{ij}$
+
+Note: You may see $public_{j}$ only predicts the level-2 intercept but not slope. This is intentional and only models a main effect of the level-2 predictor. Modeling the level-2 predictor for the level-2 slope would result in a cross-level interaction.
+
+------------------------------------------------------------------------
+
+1.  the fixed effect for the intercept, controlling for `ses` and `public`; $γ_{00}$
+
+2.  the fixed effect for the slope of `public` controlling for `ses;` $γ_{01}$
+
+3.  the fixed effect for the slope of `ses` controlling for `public`; $γ_{10}$
+
+4.  a random effect for the intercept capturing the variance of schools around the intercept, controlling for `ses` and `public`; $\sigma^{2}$
+
+5.  a random effect capturing the variance of students around their school mean math achievement, controlling for `ses` and `public`; $\tau^{2}_{0}$
+
+6.  a random effect for the slope capturing variance of school slopes around the grand mean slope, controlling for `ses`; $\tau^{2}_{1}$
+
+7.  a random effect covariance capturing how the intercept variance and slope variance relate to each other; $\tau_{01}$
+
+------------------------------------------------------------------------
+
+```{r}
+summary(GLMM.L1SESV.L2PUB)
+```
+
+## Distinguishing Random Factors and Random Effects
+
+-   A factor is a variable.
+
+-   An effect is the variable's coefficient.
+
+Full formula: $math_{ij}=γ_{00}+γ_{1j}ses_{ij}+U_{0j}+U_{1j}ses_{ij}+R_{ij}$
+
+Where we have two fixed effects: $γ_{00}$ and $γ_{1j}$
+
+We have three random effects: random-intercept $U_{0j}$, random-slope of SES $U_{1j}ses_{ij}$ and level-1 variance $R_{ij}$
+
+And one random factor: School, which is not seen directly in the formla but is denoted by subscript "i". That's because the fixed terms average over all the schools, but the random terms are per school.
+
+------------------------------------------------------------------------
+
+Moving on...
+
+What if we want to know how school type affects the slope of `ses`, though? In other words, is there a difference in the effect of SES on math achievement in a private or public school?
+
+## Cross-Level Interaction
+
+This is one of the biggest advantages of using MLMs/MEMs is that you can estimate cross-level interactions between variables at higher-level units and variables at lower-level units. This would be reflected by predicting SES slopes (L1: Math \~ SES) by school type (L2: SES slope \~ Public)
+
+```{r}
+GLMM.CL <- lmer(math ~ 1 + ses * public + (ses|schcode), data = df)
+```
+
+------------------------------------------------------------------------
+
+The parameters in this model are identical the random-intercepts and random-slopes model estimated prior, except with an additional parameter:
+
+1.  the fixed effect for the effect of `public` on the slope of `ses`; $γ_{11}$
+
+Why is the cross-level interaction modeled as the slope of SES predicted by public? Let's do the math.
+
+------------------------------------------------------------------------
+
+Level 1: $math_{ij}=β_{0j}+β_{1j}ses_{ij}+R_{ij}$
+
+Level 2 Slope: $β_{1j}=γ_{10}+γ_{11publicj}+U_{1j}$
+
+$math_{ij}=β_{0j}+XXXXXses_{ij}+R_{ij}$
+
+$math_{ij}=β_{0j}+(γ_{10}+γ_{11publicj}+U_{1j})ses_{ij}+R_{ij}$
+
+Combined: $math_{ij}=β_{0j}+γ_{10}ses_{ij}+γ_{11}ses_{ij}*public_{j}+U_{1j}ses_{ij}+R_{ij}$
+
+------------------------------------------------------------------------
+
+Now, we have slopes predicted by the level-2 variable, which estimates a cross-level interaction.
+
+# Crossed and Nested Random Effects
+
+```{r, include=F}
+# load required packages
+library("lme4")        # model specification / estimation
+library("afex")        # anova and deriving p-values from lmer
+library("broom.mixed") # extracting data from model fits 
+library("faux")        # generate correlated values
+library("tidyverse")   # data wrangling and visualisation
+# set up the custom data simulation function
+my_sim_data <- function(
+  n_subj      = 100,   # number of subjects
+  n_ingroup  =  25,   # number of ingroup stimuli
+  n_outgroup =  25,   # number of outgroup stimuli
+  beta_0     = 800,   # grand mean
+  beta_1     =  50,   # effect of category
+  omega_0    =  80,   # by-item random intercept sd
+  tau_0      = 100,   # by-subject random intercept sd
+  tau_1      =  40,   # by-subject random slope sd
+  rho        = 0.2,   # correlation between intercept and slope
+  sigma      = 200) { # residual (standard deviation)
+  
+  # simulate a sample of items
+  items <- data.frame(
+    item_id = seq_len(n_ingroup + n_outgroup),
+    category = rep(c("ingroup", "outgroup"), c(n_ingroup, n_outgroup)),
+    X_i = rep(c(-0.5, 0.5), c(n_ingroup, n_outgroup)),
+    O_0i = rnorm(n = n_ingroup + n_outgroup, mean = 0, sd = omega_0)
+  )
+
+  # simulate a sample of subjects
+  subjects <- faux::rnorm_multi(
+    n = n_subj, mu = 0, sd = c(tau_0, tau_1), r = rho, 
+    varnames = c("T_0s", "T_1s")
+  )
+  subjects$subj_id <- 1:n_subj
+  
+  # cross subject and item IDs 
+  crossing(subjects, items)  %>%
+    mutate(
+      e_si = rnorm(nrow(.), mean = 0, sd = sigma),
+      RT = beta_0 + T_0s + O_0i + (beta_1 + T_1s) * X_i + e_si
+    ) %>%
+    select(subj_id, item_id, category, X_i, RT)
+}
+sim_dat <- my_sim_data()
+```
+
+------------------------------------------------------------------------
+
+## Nested Random Effects
+
+Every lower-level unit is unique to each higher-level unit
+
+e.g. Different classes for each school (or different students for each class)
+
+![](https://i.stack.imgur.com/PPZsq.png){alt="enter image description here"}
+
+## Nested Random Effects Syntax
+
+```{r}
+# (1|School/Class)
+```
+
+## Crossed Random Effects
+
+Every lower-level unit appears in every higher-level unit.
+
+e.g. Same classes for each school. (Intuitive psychology example: Same stimuli for each participant)
+
+![](https://i.stack.imgur.com/Bx8v2.png)
+
+## Crossed Random Effects Syntax
+
+```{r}
+# (1|School) + (1|Class)
+```
+
+## Example of Crossed Random Effects: Stimuli and Participants
+
+```{r}
+head(sim_dat)
+```
+
+## Implement a Crossed Random Effects Model
+
+By-Participant and By-Stimuli Random-Intercepts and By-Participant Random-Slopes for $X_{i}$ on reaction time
+
+```{r}
+mod_sim <- lmer(RT ~ 1 + X_i + (1 | item_id) + (1 + X_i | subj_id),
+                data = sim_dat)
+
+summary(mod_sim)
+```
+
+# Miscellaneous Advanced Topics
+
+## Partial Pooling Improves Predictions
+
+-   Pulls more extreme estimates towards an overall average
+
+-   Information from all groups can be used to inform parameter estimates for each individual group
+
+![](https://149362800.v2.pressablecdn.com/wp-content/uploads/2016/09/partialpool.png){alt="Prediction, Pooling, and Shrinkage - Conductrics" width="350"}
+
+------------------------------------------------------------------------
+
+Gives more "weight" to groups with more data...
+
+![](images/Screen%20Shot%202022-11-01%20at%208.46.18%20PM.png)
+
+------------------------------------------------------------------------
+
+![](images/Screen%20Shot%202022-11-01%20at%208.56.18%20PM.png)
+
+------------------------------------------------------------------------
+
+![](images/Screen%20Shot%202022-11-01%20at%208.56.27%20PM.png)
+
+## Effect Sizes in Mixed Models
+
+-   Conditional R2: takes both the fixed and random effects into account.
+
+-   Marginal R2: considers only the variance of the fixed effects.
+
+![](https://www.theanalysisfactor.com/wp-content/uploads/2019/08/R-Squared-for-Mixed-Effects-Models-3.jpg)
+
+![](https://www.theanalysisfactor.com/wp-content/uploads/2019/08/R-Squared-for-Mixed-Effects-Models-2.jpg)
+
+------------------------------------------------------------------------
+
+### Useful Packages for Effect Sizes for Mixed Models
+
+```{r}
+#library(r2glmm)
+#library(r2beta)
+#library(r2mlm)
+```
+
+## Convergence Issues
+
+Sometimes optimizers cannot always find the combination of parameters that maximizes the likelihood of observing your data. When optimizers cannot find a solution, this is called non-convergence.
+
+------------------------------------------------------------------------
+
+1.  Number of iterations. If you increase the number of iterations, the algorithm will search for longer. This is the equivalent of getting our puzzle-doer to sit at the table for longer trying to assemble the puzzle, trying out different and more pieces.
+
+2.  Algorithm: the algorithm determines how the optimizer chooses its next attempted solution. What strategy is our puzzle-doer using to fit pieces into the puzzle?
+
+3.  Tolerance: this can get a bit technical and vary depending on context, so we suggest [Brauer and Curtin, 2018](https://doi.apa.org/doiLanding?doi=10.1037%2Fmet0000159) for more. But in our case, we can think of it as the algorithm's tolerance for differences in solutions. Lower tolerance means slightly different solutions will be seen as different, whereas higher tolerance means two different solutions that are still kind of close will be treated as essentially the same. Maybe our puzzle-doer needs glasses; tolerance is like whether they're wearing their glasses and can distinguish between two close-but-not-identical assembled puzzles.
+
+------------------------------------------------------------------------
+
+### Try different optimizers
+
+```{r}
+# Iterate through a set of optimizers, report convergence results
+diff_optims <- allFit(GLMM.CL, maxfun = 1e5)
+```
+
+------------------------------------------------------------------------
+
+### Check for convergence flags
+
+```{r}
+diff_optims_OK <- diff_optims[sapply(diff_optims, is, "merMod")]
+lapply(diff_optims_OK, function(x) x@optinfo$conv$lme4$messages)
+```
+
+------------------------------------------------------------------------
+
+In your lmer/glmer function, you would include an argument such as below to increase the number of iterations or algorithm.
+
+```{r}
+# control=glmerControl(optimizer="bobyqa",
+#                            optCtrl=list(maxfun=2e5)))
+```
+
+# Power Analysis for Multilevel Models
+
+## simr: Simulation-Based Power Analysis in R
+
+https://humburg.github.io/Power-Analysis/simr_power_analysis.html
+
+## Mathieu et al., (2012) Power Tool for Cross-Level Interactions
+
+https://aguinis.shinyapps.io/ml_power/
+
+## Murayama et al., (2022) Summary Statistics Based Power Analysis
+
+https://koumurayama.shinyapps.io/summary_statistics_based_power/
+
+# An Interactive Tutorial
+
+http://mfviz.com/hierarchical-models/

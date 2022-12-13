@@ -1,0 +1,292 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+# Load relevant libraries
+
+```{r}
+library(lme4) # lme4 is probably the most popular package for multilevel modeling in R
+library(lmerTest) # lme4's creator has an issue with p-values and omitted them from the package. You can load lmerTest to include p-values. Part of the issue is there's some debate about the estimation of degrees of freedom (across multiple levels of analysis) in multilevel models that is required for computing p-values. lmerTest defaults to an approach called Satterwaithe's approximation of df
+```
+
+# Set working directory
+
+```{r}
+setwd("~/Documents/UC Riverside/Teaching/PSYC 259 (R Programming)/")
+```
+
+The data is simulated/made up, but it is meant to be reflective of a design in which 100 subjects observe 50 stimuli-- 25 outgroup and 25 ingroup faces-- with different emotional expressions, and have to categorize the emotional expressions of these faces as quickly as possible. Therefore, the DV is reaction time. The lower-level IV is group (ingroup/outgroup). The upper-level IV is a self-control self-reported variable for each individual. Therefore, participants are the L2 grouping factor for this paradigm.
+
+# Import data
+
+```{r}
+fullDf <- read.csv("./259MLMDf.csv", header = TRUE)
+```
+
+There are different perspectives on multi-level models-- Some say you should start with an intercept only model and build up (bottom-up), and others say you should start with a theory-motivated model (top-down). For pedagogical purposes, I'll be describing a bottom-up approach but consult your advisor/field on what is appropriate for you.
+
+# Null Model
+
+From a data-driven, bottom-up, model comparison approach, you should start with a null model that contains no predictors (i.e. fixed effects) besides the intercept of each group (i.e. random factors).
+
+```{r}
+m <- lmer(zRT ~ 1 + (1 | subj_id),
+                data = fullDf)
+summary(m)
+```
+
+The elements in the parentheses represent the random effects. On right side of the vertical line is the random factor(s) (i.e. subjects). On the left side are the random slopes for the fixed effects (i.e. random variation in the effect of each subject's slope). Outside of parentheses are the fixed effects. This is a null model so you have a 1 to denote no fixed effects besides an intercept.
+
+The random intercept allows us to account for variability in participant averages.
+
+If you see above under random effects, you'll notice that there are random effects statistics reported for both subjects and residuals. You can understand these random effects as reflecting the between-subjects variance and the within-subjects variance respectively. More specifically, the subject effect tells you how much of the within-subject variance is explained by between-subject variance.
+
+# Random Intercept for Level 1 Predictor, Fixed Slopes
+
+If we don't believe the effect of group face on reaction time is going to substantially vary between subjects (or if model comparisons tell us that it does not), you can set the model to fixed slopes and only allow intercepts to vary
+
+```{r}
+m <- lmer(zRT ~ group + (1 | subj_id),
+                data = fullDf)
+summary(m)
+```
+
+If you want to be very explicit in your syntax, you can explicitly denote the intercept as seen below. However, in all models in which there are predictors, the intercept is assumed.
+
+```{r}
+m <- lmer(zRT ~ 1 + group + (1 | subj_id),
+                data = fullDf)
+summary(m)
+```
+
+Notice that the only random effects that are reported are for the intercept (within-subjects variance) and the residual (between-subjects variance). This is because while you are including fixed effects, you are not accounting for their variance (i.e. random effects).
+
+The fixed effects represent the population of events in which a "typical" subject encounters a "typical" stimulus. So how does independent variable X typically predict dependent variable Y, for the typical stimulus/subject?
+
+```{r}
+m <- lmer(zRT ~ group + (1 | subj_id),
+                data = fullDf)
+summary(m)
+```
+
+# Random Intercept and Random Slope for Level 1 Predictor
+
+Okay, but what if there is variability in your effect between individuals, that you expect either from a theoretical or data-driven approach. You can explicitly state this by including your fixed effect within the parentheses that denote random effects, therefore estimating a parameter for the variability in the effect across individuals. In other words, the fixed effect for group tells you the average effect of ingroup/outgroup faces on reaction time in categorizing the emotions of the faces. The random effect expresses the variance, or uncertainty, around this effect across individuals.
+
+```{r}
+m <- lmer(zRT ~ group + (group | subj_id),
+                data = fullDf)
+summary(m)
+```
+
+Note that the p-value is notably larger for the model with random slope for the level 1 predictor than with a fixed slope for the level 1 predictor. Misspecification of random effects as fixed can lead to massively inflated false positive rates (see Barr et al., 2013). So while multilevel models are powerful and useful tools, there is also a lot of flexibility that can lead you to potentially false conclusions so be careful and make sure you know what your model is saying!
+
+# Random Intercept and Random Slope for Level 1 Predictor, Random Intercept and Fixed Slope for Level 2 Predictor
+
+What if we want to model a level-2 predictor (e.g. self-control personality measure)? It's easy, see below:
+
+```{r}
+m <- lmer(zRT ~ group + zSC + (group | subj_id),
+                data = fullDf)
+summary(m)
+```
+
+# Cross-Level Interactions
+
+You can specify interactions between level 2 predictors/fixed effects (e.g. self-control personality) and level 1 predictors/fixed effects (i.e. ingroup/outgroup faces).
+
+```{r}
+m <- lmer(zRT ~ group * zSC + (group | subj_id),
+                data = fullDf)
+summary(m)
+```
+
+Note that cross-level interactions are highly susceptible to false positives if you improperly specify the level 1 predictor as not varying in its effect (Heisig & Schaefer, 2019), so be careful with the cross-level interactions. See below in which we remove the random slope for the lower level predictor of group effect on reaction time. Note the difference in p-value when you remove the random slope:
+
+```{r}
+m <- lmer(zRT ~ group * zSC + (1 | subj_id),
+                data = fullDf)
+summary(m)
+```
+
+Power in multi-level models is tricky, but cross-level interactions require greater sample size at both levels to detect an effect of any other analyses you will do.
+
+# Significance Testing and Model Build-Up through LRTs
+
+Many people advocate for significance testing with mixed models to be conducted entirely via likelihood ratio tests (LRT) and model build-up. I am not one of those people, and there is in fact evidence that LRTs can be anti-conservative (Luke, 2017). However, whatever your feelings on LRTs as the only approach for significance testing are (as compared to using the p-values estimated from lmerTest's Satterwaithe's approximation), model build-up serves a useful tool for determining what fixed and random effects terms are supported by the data.
+
+Start with Null Model:
+
+```{r}
+mNull <- lmer(zRT ~ 1 + (1 | subj_id),
+                data = fullDf)
+```
+
+Add level 1 predictor, compare to null:
+
+```{r}
+m1 <- lmer(zRT ~ group + (1 | subj_id),
+                data = fullDf)
+anova(m1, mNull)
+```
+
+Add level 2 predictor, compare to null:
+
+```{r}
+m2 <- lmer(zRT ~ zSC + (1 | subj_id),
+                data = fullDf)
+anova(m2, mNull)
+```
+
+Add both predictors, compare to best performing of two main effect predictors:
+
+```{r}
+m3 <- lmer(zRT ~ zSC + group + (1 | subj_id),
+                data = fullDf)
+anova(m1, m3)
+```
+
+Add interaction, compare to main effects model:
+
+```{r}
+m4 <- lmer(zRT ~ zSC * group + (1 | subj_id),
+                data = fullDf)
+anova(m3, m4)
+```
+
+Add random slope for level 1 predictor
+
+```{r}
+m5 <- lmer(zRT ~ zSC * group + (group | subj_id),
+                data = fullDf)
+anova(m4, m5)
+```
+
+Perform all the model comparisons at once, compared to intercept only. This function will NOT compare all models to each other, but rather will compare each model to the null, intercept-only model.
+
+```{r}
+anova(mNull, m1, m2, m3, m4, m5)
+```
+
+# Different Types of Random Effects Structures
+
+You may have more than one type of random factor in a given design/analysis. Two different ways of models different organizations of nested data are (1) crossed and (2) nested designs/analyses.
+
+An example of a crossed design would be when you have a sample of subjects who all encounter the SAME stimulus set. This would be specified as seen below:
+
+```{r}
+m <- lmer(zRT ~ zSC * group + (group | subj_id) + (1 | item_id),
+                data = fullDf)
+```
+
+Meanwhile, a nested design might be when there are many schools which you are sampling from, each of which have their own DISTINCT classes within them.
+
+For example, here I created a dataframe in which half the subjects observed two categories ("ingroup"/"outgroup"), whereas the other half observed two different categories ("red"/"blue"). So the two categories are distinctly nested within subjects 1-50 and 51-100 respectively.
+
+```{r}
+m <- lmer(zRT ~ zSC * group + (1 | subj_id/item_stim),
+                data = fullDf)
+summary(m)
+```
+
+You'll see that we now have random effects not just for subject, but for the interaction of subject and item_id, or category type nested within subjects.
+
+You can also specify this nesting this way. It's the same thing:
+
+```{r}
+m <- lmer(zRT ~ zSC * group + (1 | subj_id) + (1 | subj_id:item_stim),
+                data = fullDf)
+summary(m)
+```
+
+# Troubleshooting
+
+## Singular Fit
+
+Sometimes you may encounter a warning about a "singular fit". Generally, this means that the variance for your random effects is low enough that your random effects terms are unwarranted/unnecessary. See below:
+
+```{r}
+failTest <- read.csv("./259MLMfailDf.csv", header = TRUE)
+m <- lmer(zRT_1 ~ group_1 * zSC_1 + (group_1 | subj_id_1),
+                data = failTest)
+summary(m)
+```
+
+If you look at the group variance under the random effects, you will see that the variance is very low.
+
+If you drop this random slope term for the level 1 predictor, the singular fit warning will leave you alone:
+
+```{r}
+m <- lmer(zRT_1 ~ group_1 * zSC_1 + (1 | subj_id_1),
+                data = failTest)
+summary(m)
+```
+
+## Removing Random Effects Correlations to Simplify Random Effects Structure
+
+Your random effects structure will include a parameter that needs to be estimated for the correlation  between the random intercepts and slopes. However, if you remove this, it will simplify the model and potentially allow you to run the model without convergence failures or singular fits.
+
+```{r}
+m <- lmer(zRT_2 ~ group_2 * zSC_2 + (group_2 | subj_id_2),
+                data = failTest)
+summary(m)
+```
+
+We got a singular fit. Let's simplify by removing correlations:
+
+```{r}
+m <- lmer(zRT_2 ~ group_2 * zSC_2 + (group_2 || subj_id_2),
+                data = failTest)
+summary(m)
+```
+
+By removing the correlation between random effects, the model no longer returns any errors. The model's fixed effect statistics change slightly but pretty negligibly.
+
+## Convergence Error
+
+Unlike linear regression, mixed models are solved via maximum likelihood and search over a parameter space for the optimal solution across a finite number of iterations using a particular algorithm.
+
+Occassionally (okay, not occassionally-- ALL THE TIME), you will encounter convergence failures. This usually occurs when you try to specify and overly complex model in terms of random effects. Typically, you will need to simplify your model but there's some things you can do first.
+
+```{r}
+m <- lmer(zRT_3 ~ group_3 * zSC_3 + (group_3 + zSC_3 | subj_id_3),
+                data = failTest)
+summary(m)
+```
+
+Some primary ways to troubleshoot model:
+- Change optimizer
+- Increase iterations
+- Scale variables
+- Simplify model, random effects structure
+
+See below for a model in which the optimizer was changed the iterations were increased, which allowed the model to converge:
+
+```{r}
+m <- lmer(zRT_3 ~ group_3 * zSC_3 + (group_3 + zSC_3 | subj_id_3),
+                data = failTest, control=lmerControl(optimizer="bobyqa",
+                                optCtrl=list(maxfun=2e5)))
+summary(m)
+```
+
+## REML vs ML: Which type of estimation technique should I use?
+
+lmer defaults to REML (Restricted Maximum Likelihood) estimation, with the parameter REML = TRUE. What's the difference and which should I use?
+
+There are differences between REML and ML. If you're comparing models with LRTs, ML will save some time and you can set REML to false.
+
+See below for models with REML vs. ML:
+
+```{r}
+m1 <- lmer(zRT ~ group + (1 | item_id) + (1 | subj_id),
+                data = fullDf, REML = FALSE)
+
+m2 <- lmer(zRT ~ group + (1 | item_id) + (1 | subj_id),
+                data = fullDf, REML = TRUE)
+```
+
+
+

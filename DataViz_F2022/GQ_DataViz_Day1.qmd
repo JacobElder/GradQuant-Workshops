@@ -1,0 +1,903 @@
+---
+title: "Grad Quant: Data Visualization"
+format:
+  revealjs:
+    theme: blood
+    highlight-style: monokai
+    toc-depth: 2
+    self-contained: true
+    citations-hover: true
+    code-link: true
+    code-block-bg: "#272822"
+    css: "./assets/slide-style.css"
+editor: visual
+width: 1360
+height: 800
+echo: true
+---
+
+# Introduction
+
+------------------------------------------------------------------------
+
+## Data Visualization
+
+-   Data visualization is the graphical representation of information and data.
+    -   Provide an accessible way to see and understand trends, outliers, and patterns in data.
+-   Data visualization can be used for:
+    -   **Exploration:** Identifying and learning from patterns/trends in data
+    -   **Explanation:** Explaining or communicating findings from data
+
+## Visualization in R using ggplot2
+
+-   R is increasingly adopted for statistical analyses/plotting
+-   ggplot2 is a package within tidyverse that is most frequently used
+    -   Level of customization has led outlets such as BBC and NYT to adopt ggplot2 as their preferred data visualization tool
+-   Additional benefit of visualization in R (or other programming languages):
+    -   transparency
+    -   easily adapt and re-run visualization
+
+## Grammar of Graphics
+
+-   ggplot2 plots are built in a series of layers
+
+    ![](images/layers-1.png){width="700"}
+
+## Grammar of Graphics: Layers
+
+1.  Plot space is built
+
+2.  The variables are specified
+
+3.  The type of visualisation (known as a geom) that is desired for these variables is specified - in this case geom_point() is called to visualise individual data points;
+
+4.  A second geom is added to include a line of best fit, the axis labels are edited for readability
+
+5.  A theme is applied to change the overall appearance of the plot.
+
+These layers allow a lot of customizability by allow tweaking of layers independently of other layers, and easy adapting of existing code.
+
+------------------------------------------------------------------------
+
+![](images/FeJmBn5XEAM_kFI.png){width="565"}
+
+## Install Packages
+
+Run this just once, as you only need to install the package a single time. (Well, except that you may need to update it occassionally)
+
+```{r}
+#| echo: true
+# install.packages("tidyverse", "patchwork")
+library(tidyverse)
+```
+
+## Data and Descriptives
+
+Let's load the data contained in tidyverse, "starwars" containing data about characters from Star Wars movies. The summary function is contained within base R.
+
+Let's inspect "mass", the mass of each star was character
+
+```{r}
+data(starwars)
+summary(starwars$mass)
+```
+
+------------------------------------------------------------------------
+
+The psych package's "desribe" function is also helpful. The "::" argument allows you to call a single function from a package without calling the full package and all of its contents.
+
+```{r}
+# install.packages("psych")
+psych::describe(starwars$mass)
+```
+
+------------------------------------------------------------------------
+
+You can also do it using tidyverse approach:
+
+```{r}
+starwars %>%
+  group_by(gender) %>%
+  summarise(
+    mean = mean(mass, na.rm=T),
+    median = median(mass, na.rm=T),
+    sd = sd(mass, na.rm=T),
+    min = min(mass, na.rm=T),
+    max = max(mass, na.rm=T),
+    count = n()
+  )
+```
+
+## Factors
+
+Maybe we want to look at some data by gender so let's "factorize" it:
+
+```{r}
+starwars$gender[1:10]
+starwars <- mutate(starwars, gender = factor(
+  x = gender, # column to translate
+  levels = c("masculine", "feminine"), # values of the original data in preferred order
+  labels = c("masculine", "feminine") # labels for display
+))
+starwars$gender[1:10]
+```
+
+## Summarize by Group
+
+Let's take a look at the mass by gender:
+
+```{r}
+psych::describeBy(starwars$mass, starwars$gender)
+```
+
+Woah! Males have a massive standard deviation... And it looks like the the max is huge too. This may be a good time to inspect the data. What would be a good way to plot this?
+
+# Histograms
+
+------------------------------------------------------------------------
+
+Let's do the histogram step by step...
+
+Layer 1: Plot frame
+
+-   `data` specifies which data source to use for the plot
+
+```{r}
+ggplot(data = starwars)
+```
+
+------------------------------------------------------------------------
+
+Layer 2: Variables specified
+
+-   `mapping` specifies which variables to map to which aesthetics (`aes`) of the plot. Mappings describe how variables in the data are mapped to visual properties (aesthetics) of geoms.
+
+-   `x` specifies which variable to put on the x-axis
+
+-   define an aesthetic mapping (using the aesthetic (`aes`) function), by selecting the variables to be plotted and specifying how to present them in the graph, e.g., as x/y positions or characteristics such as size, shape, color, etc.
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass))
+```
+
+------------------------------------------------------------------------
+
+Layer 3: Type of visualization.
+
+-   geom_histogram() specifies that a histogram visualization will be used
+
+Woah! Big outlier
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass)) + geom_histogram()
+```
+
+------------------------------------------------------------------------
+
+Layer 3 still: Customization
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass)) + 
+  geom_histogram(fill = "blue", alpha=.2)
+```
+
+------------------------------------------------------------------------
+
+Layer 4: Theme
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass)) + 
+  geom_histogram(fill = "blue", alpha=.2) + 
+  theme_minimal()
+```
+
+------------------------------------------------------------------------
+
+Layer 5: Facet wrap
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass)) + 
+  geom_histogram(fill = "blue", alpha=.2) + 
+  theme_minimal() + 
+  facet_wrap( ~ gender, nrow = 1)
+```
+
+------------------------------------------------------------------------
+
+Facet wrap can be specified using the tilde but can also be specified using vars():
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass)) + 
+  geom_histogram(fill = "blue", alpha=.2) + 
+  theme_minimal() + 
+  facet_wrap( vars(gender), nrow = 1)
+```
+
+------------------------------------------------------------------------
+
+Layer 5: Fill
+
+You could also depict gender using fill.
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass, fill=gender)) + 
+  geom_histogram( alpha=.2) + 
+  theme_minimal()
+```
+
+------------------------------------------------------------------------
+
+Level 6: Labels
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass)) + 
+  geom_histogram(fill = "blue", alpha=.2) + 
+  theme_minimal() + 
+  facet_wrap( ~ gender, nrow = 1) + 
+  labs(x="Mass",y="Quantity", title = "Distribution of Mass in Star Wars")
+```
+
+------------------------------------------------------------------------
+
+You can also customize the binwidth:
+
+```{r}
+starwars %>% drop_na() %>% ggplot(mapping = aes(x = mass)) + 
+  geom_histogram(binwidth = 1, fill = "blue", alpha=.2) + 
+  theme_minimal() + 
+  facet_wrap( ~ gender, nrow = 1) + 
+  labs(x="Mass",y="Quantity", title = "Distribution of Mass in Star Wars")
+```
+
+## Identify the outlier
+
+```{r}
+starwars$name[which(starwars$mass>1000)]
+```
+
+It's Jabba the Hut! Let's remove his weight (i.e., assign NA to it) and re-run the plots.
+
+```{r}
+starwars$mass[which(starwars$mass>1000)] <- NA
+```
+
+## Re-Plot without Jabba
+
+Males look a lot more sensible to interpret without the massive outlier
+
+```{r}
+ggplot(data = starwars, mapping = aes(x = mass)) + 
+  geom_histogram(fill = "blue", alpha=.2) + 
+  theme_minimal() + 
+  facet_wrap( ~ gender, nrow = 1) + 
+  labs(x="Mass",y="Quantity", title = "Distribution of Mass in Star Wars")
+```
+
+## Re-Plot as Density Instead of Histogram
+
+Using facet_wrap
+
+```{r}
+starwars %>% 
+  drop_na %>% 
+  ggplot(mapping = aes(x = mass)) + 
+  geom_density(fill = "blue", alpha=.2) + 
+  theme_minimal() + facet_wrap( ~ gender, nrow = 1) + 
+  labs(x="Mass",y="Quantity", title = "Distribution of Mass in Star Wars")
+```
+
+------------------------------------------------------------------------
+
+```{r}
+starwars %>% 
+  drop_na %>% 
+  ggplot(mapping = aes(x = mass, fill=gender)) + 
+  geom_density(alpha=.2) + 
+  theme_minimal() + 
+  labs(x="Mass",y="Quantity", title = "Distribution of Mass in Star Wars")
+```
+
+------------------------------------------------------------------------
+
+Now we have an understanding of the distributions of mass for the different genders in Star Wars, maybe we want to plot their means. How would we do that?
+
+# Bar Plots
+
+------------------------------------------------------------------------
+
+Organize data for plotting
+
+```{r}
+summedMass <-starwars %>% 
+  group_by(gender) %>% 
+  drop_na() %>%
+  summarize(SD = sd(mass,na.rm=T),
+            mass = mean(mass,na.rm=T) ) 
+```
+
+------------------------------------------------------------------------
+
+Layer 1: Initialize plot
+
+```{r}
+ggplot(data=summedMass)
+```
+
+------------------------------------------------------------------------
+
+Layer 2: Variables
+
+```{r}
+ggplot(data=summedMass, aes(x=gender,y=mass))
+```
+
+------------------------------------------------------------------------
+
+Layer 3: Bar plot
+
+```{r}
+ggplot(summedMass, aes(x=gender,y=mass)) + geom_bar(stat="identity")
+```
+
+------------------------------------------------------------------------
+
+Note: The default for geom_bar is to count the data provided and that you should not specify a y in aes().
+
+```{r}
+ggplot(starwars, aes(x=gender)) + geom_bar()
+```
+
+------------------------------------------------------------------------
+
+Layer 4: Error bars
+
+```{r}
+summedMass %>% 
+  ggplot(aes(x=gender,y=mass)) + 
+  geom_bar(stat="identity") + 
+  geom_errorbar(aes(ymin=mass+SD, ymax=mass-SD), width=.2)
+```
+
+------------------------------------------------------------------------
+
+Customize: Fill bars with red, outline with blue, error bars colored pink, classic theme
+
+```{r}
+summedMass %>% 
+  ggplot(aes(x=gender,y=mass)) + 
+  geom_bar(fill="red",color="blue",stat="identity") + 
+  geom_errorbar(color="pink",aes(ymin=mass+SD, ymax=mass-SD), width=.2) + 
+  theme_classic()
+```
+
+------------------------------------------------------------------------
+
+Customize axes, including "breaks"
+
+```{r}
+summedMass %>% 
+  ggplot(aes(x=gender,y=mass)) + 
+  geom_bar(fill="red",color="blue",stat="identity") + 
+  geom_errorbar(color="pink",aes(ymin=mass+SD, ymax=mass-SD), width=.2) + 
+  theme_classic() + 
+  scale_x_discrete(name = "Gender", 
+                   labels = c("Males", "Females")) +
+  scale_y_continuous(name = "Average Weight",
+                     breaks = c(0,50,100))
+```
+
+------------------------------------------------------------------------
+
+However, bar plots can be a bit limited in how they convey information about summary statistics as they do not depict clearly the distribution and spread of scores.
+
+# Box Plots
+
+------------------------------------------------------------------------
+
+```{r}
+starwars %>% drop_na %>% ggplot(aes(x = gender, y = mass)) +
+  geom_boxplot()
+```
+
+## Grouped Box Plots
+
+First, films column contains a bunch of lists in each row. Let's fix that.
+
+```{r}
+starwars$films[1:5]
+starwarsunnested <- starwars %>% 
+  unnest(films) %>%  # unnest list
+  drop_na() %>% # remove NAs
+  add_count(gender, films) %>% # count how many appearances of each gender within each film
+  filter(n > 1) # retain if gender appears more than once in film
+starwarsunnested$films[1:5]
+```
+
+------------------------------------------------------------------------
+
+Now, let's plot the mass of different Star Wars characters by gender and by film, using box plots.
+
+```{r}
+starwarsunnested %>% 
+  drop_na() %>% 
+  ggplot(aes(x = gender, y = mass, fill = films)) +
+  geom_boxplot() + 
+  scale_x_discrete(name = "Gender",
+                   labels = c("Male", "Female")) +
+  scale_y_continuous(name = "Weight") +
+  theme_classic()
+```
+
+# Violin Plots
+
+------------------------------------------------------------------------
+
+Violin plots also communicate the spread of data, by essentially flipping density plots sideways .
+
+```{r}
+starwarsunnested %>% drop_na() %>% ggplot(aes(x = gender, y = mass, fill = films)) +
+  geom_violin() + scale_x_discrete(name = "Gender",
+                   labels = c("Male", "Female")) +
+  scale_y_continuous(name = "Weight") +
+  theme_classic()
+```
+
+# Violin and Box Plots Combined
+
+------------------------------------------------------------------------
+
+```{r}
+pos <- position_dodge(0.9)
+
+starwarsunnested %>% drop_na() %>% ggplot(aes(x = gender, y = mass, fill=films)) +
+  geom_violin(position = pos) +
+  geom_boxplot(width = .2, 
+               fatten = NULL, 
+               position = pos)  +
+  stat_summary(fun = "mean", 
+               geom = "point", 
+               position = pos) +
+  stat_summary(fun.data = "mean_se", 
+               geom = "errorbar", 
+               width = .1,
+               position = pos)
+```
+
+# Rain Cloud Plots
+
+These are arguably my favorite for summary statistics. I think they best capture the best of both worlds. Plotting the miles per gallon for cars based on whether they have an automatic or manual transmission.
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars %>% drop_na %>% ggplot(aes(x=as.factor(am),y=mpg)) + 
+  ggdist::stat_halfeye(adjust = .5, width = .7, .width = 0, justification = -.2, point_colour = NA) + 
+  geom_boxplot(width = .2, outlier.shape = NA) + 
+  geom_jitter(width = .05, alpha = .3) + 
+  labs(y="Miles per Gallon") + 
+  scale_x_discrete(name = "Transmission", 
+                   labels = c("Automatic", "Manual"))
+```
+
+# Timeseries Line Plot
+
+------------------------------------------------------------------------
+
+The base R package "Nile" is a timeseries object which contains a particular type of data for timeseries analysis and plotting. We are going to convert it to a dataframe so we can use it for ggplot2.
+
+```{r}
+Nile[1:10]
+NileDf <- as.data.frame(Nile)
+NileDf <- cbind(NileDf, Year=1871:1970)
+head(NileDf)
+```
+
+------------------------------------------------------------------------
+
+Now, let's plot it as timeseries data using a lineplot:
+
+```{r}
+ggplot(NileDf, aes(x=Year, y=Nile)) +
+  geom_line() + 
+  theme_linedraw() +
+  labs(title="Measurements of the annual flow of the river Nile at Aswan",y="Annual flow in 10^8 m^3",x="Year")
+```
+
+------------------------------------------------------------------------
+
+Maybe we want to customize it a bit. Let's add points for each time point, and increase the thicknes and change the linetype. And let's change the background to blue!
+
+```{r}
+ggplot(NileDf, aes(x=Year, y=Nile)) +
+  geom_line(size=1.5, linetype="dashed") + theme_linedraw() + labs(title="Measurements of the annual flow of the river Nile at Aswan",y="Annual flow in 10^8 m^3",x="Year")  +
+  geom_point(size=2) +
+  theme(panel.background = element_rect(fill = "lightblue",
+                                colour = "lightblue",
+                                size = 0.5, linetype = "solid")
+  )
+```
+
+------------------------------------------------------------------------
+
+Okay, that looks terrible. But you get the picture.
+
+# Scatterplots
+
+Scatterplots can be useful for depicting the relationship between two continuous variables
+
+------------------------------------------------------------------------
+
+First, let's clean up mtcars a bit and convert transmission to a categorical factor and convert the rownames that contain car names to an actual column/variable titled "Cars".
+
+```{r}
+mtcars <- tibble::rownames_to_column(mtcars, "Cars")
+mtcars$am <- as.factor(mtcars$am)
+```
+
+------------------------------------------------------------------------
+
+Let's plot the relationship between horsepower and miles-per-gallon. All you need to do is use "geom_point". You can customize this and do more things with it but this is the basis of a scatterplot.
+
+```{r}
+mtcars %>% ggplot(aes(x=mpg,y=hp)) + geom_point()
+```
+
+------------------------------------------------------------------------
+
+This isn't so clear those because the legend doesn't depict the labels and the axes aren't very explicit. How would we tweak the graph to fix this?
+
+------------------------------------------------------------------------
+
+Perhaps you want to have the colors differ based on whether it is automatic or manual transmission.
+
+```{r}
+mtcars %>% ggplot(aes(x=mpg,y=hp,color=am)) + geom_point()  +
+       scale_color_discrete(name="Transmission", labels=c('Automatic', 'Manual')) + scale_x_continuous(name="Miles per Gallon") + scale_y_continuous(name="Horsepower")
+```
+
+------------------------------------------------------------------------
+
+Maybe we want to get *real* fancy, and add label for each car!
+
+```{r}
+mtcars %>% ggplot(aes(x=mpg,y=hp,color=am)) +
+       scale_color_discrete(name="Transmission", labels=c('Automatic', 'Manual')) + scale_x_continuous(name="Miles per Gallon") + scale_y_continuous(name="Horsepower")  +
+  geom_text(size=3, aes(label = Cars, size = NULL), nudge_y = 0.7, check_overlap=T) + geom_point()
+```
+
+------------------------------------------------------------------------
+
+Finally, sometimes it can be useful to depict the plot with a best-fit line through the data points, which can be done using geom_smooth. This defaults to the loess method, which is nonlinear.
+
+```{r}
+mtcars %>% ggplot(aes(x=mpg,y=hp,color=am)) +
+       scale_color_discrete(name="Transmission", labels=c('Automatic', 'Manual')) + scale_x_continuous(name="Miles per Gallon") + scale_y_continuous(name="Horsepower")  +
+  geom_text(size=3, aes(label = Cars, size = NULL), nudge_y = 0.7, check_overlap=T) + geom_point() +
+  geom_smooth()
+```
+
+------------------------------------------------------------------------
+
+If you want to see a best-fit ordinary-least-squares line through your data points, you can add method=lm:
+
+```{r}
+mtcars %>% ggplot(aes(x=mpg,y=hp,color=am)) +
+       scale_color_discrete(name="Transmission", labels=c('Automatic', 'Manual')) + scale_x_continuous(name="Miles per Gallon") + scale_y_continuous(name="Horsepower")  +
+  geom_text(size=3, aes(label = Cars, size = NULL), nudge_y = 0.7, check_overlap=T) + geom_point() +
+  geom_smooth(method = lm)
+```
+
+------------------------------------------------------------------------
+
+You can also remove the confidence intervals of the line with "se=F":
+
+```{r}
+mtcars %>% ggplot(aes(x=mpg,y=hp,color=am)) +
+       scale_color_discrete(name="Transmission", labels=c('Automatic', 'Manual')) + scale_x_continuous(name="Miles per Gallon") + scale_y_continuous(name="Horsepower")  +
+  geom_text(size=3, aes(label = Cars, size = NULL), nudge_y = 0.7, check_overlap=T) + geom_point() +
+  geom_smooth(method = lm, se=F)
+```
+
+------------------------------------------------------------------------
+
+Let's use a different dataset for this one so we can have more levels of a factor available. The European Social Survey has multilevel self-report data available for a variety of countries. There are certain codes used for non-responses though so let's replace those. 77, 88, 99 are non-responses of some kind.
+
+```{r}
+df <- data.table::fread("ESS10.csv")
+# Set up data for plotting
+df <- df %>%
+  mutate(fairelcc = replace(fairelcc, fairelcc > 76, NA), # In country national elections are free and fair
+         medcrgv = replace(medcrgv, medcrgv > 76, NA), # In country the media are free to criticise the government
+         gvctzpv = replace(gvctzpv, gvctzpv > 76, NA), # The government protects all citizens against poverty
+         wpestopc = replace(wpestopc, wpestopc > 76, NA) # In country the will of the people cannot be stopped
+  ) %>% 
+  mutate(gndr = as_factor(ifelse(gndr==9, NA, gndr)) ) 
+```
+
+------------------------------------------------------------------------
+
+Let's plot the relationship between "media has right to criticize government" with "national elections are free and fair". Let's include different shapes for males and females, and let's have the color of the lines and data points differ based on country.
+
+```{r}
+p <- df %>%
+  ggplot() +
+  aes(x = fairelcc, y = medcrgv, shape = gndr, color=cntry) +
+  geom_jitter(alpha = .5) +
+  geom_smooth(method=lm)
+p
+```
+
+------------------------------------------------------------------------
+
+Okay, that's pretty cool. But what if we want to tweak the colors further?
+
+# Color palettes
+
+------------------------------------------------------------------------
+
+## Palette #1
+
+```{r}
+p1 <- p + scale_colour_brewer(palette = 1)
+p1
+```
+
+------------------------------------------------------------------------
+
+## Palette #2
+
+```{r}
+p2 <- p + scale_colour_brewer(palette = 2)
+p2
+```
+
+------------------------------------------------------------------------
+
+## Palette #3
+
+```{r}
+p3 <- p + scale_colour_brewer(palette = 3)
+p3
+```
+
+------------------------------------------------------------------------
+
+## Palette #4
+
+```{r}
+p4 <- p + scale_colour_brewer(palette = 4)
+p4
+```
+
+------------------------------------------------------------------------
+
+## Palette #5
+
+```{r}
+p5 <- p + scale_colour_brewer(palette = 5)
+p5
+```
+
+------------------------------------------------------------------------
+
+## Colorbrewer
+
+```{r}
+#install.packages("RColorBrewer")
+library(RColorBrewer)
+display.brewer.all(colorblindFriendly = TRUE)  
+```
+
+------------------------------------------------------------------------
+
+### "PuOr"
+
+```{r}
+p6 <- p + scale_color_brewer(palette = "PuOr")
+p6
+```
+
+------------------------------------------------------------------------
+
+### "YlOrRd"
+
+```{r}
+p7 <- p + scale_color_brewer(palette = "YlOrRd")
+p7
+```
+
+------------------------------------------------------------------------
+
+### Flipped Palette
+
+```{r}
+p8 <- p4 + scale_color_brewer(palette = "YlOrRd", direction = -1) # flip order
+p8
+```
+
+------------------------------------------------------------------------
+
+## Interpolate Colors
+
+Many color palettes only have 5 to 10 different colors, which only allows you to generate colors for 5-10 levels of a categorical factor. However, fret not! colorRamp allows you to interpolate colors betw
+
+```{r}
+#devtools::install_github("katiejolly/nationalparkcolors")
+library(nationalparkcolors)
+scales::show_col(park_palette("DeathValley", 5)) # Death valley only has 5 colors
+```
+
+------------------------------------------------------------------------
+
+Only 5 colors, so let's interpolate...
+
+```{r}
+numlevels <- 10 # we want to expand it to 10 colors
+pal <- colorRampPalette(park_palette("DeathValley", 5))(numlevels) # interpolate
+scales::show_col(pal) # show new colors
+```
+
+------------------------------------------------------------------------
+
+## Other Notes
+
+-   scale_color_brewer() applies to color but can also use scale_fill_brewer() for fill of barplots as well
+-   You can find colors/palettes you like at: https://colorbrewer2.org/
+-   You can also also change colors manually with scale_fill_manual()
+-   "wesanderson" and "nationalparks" are a couple other cool packages with custom user made palettes
+
+# Combining Plots
+
+------------------------------------------------------------------------
+
+```{r}
+# install.packages("ggpubr")
+# install.packages("patchwork")
+library(ggpubr)
+library(patchwork)
+```
+
+## Patchwork
+
+Concatenate plots
+
+```{r}
+p1 + p2
+```
+
+------------------------------------------------------------------------
+
+Stack plots
+
+```{r}
+p1 / p2
+```
+
+------------------------------------------------------------------------
+
+Concatenate and stack
+
+```{r}
+(p1 + p2) / p3
+```
+
+------------------------------------------------------------------------
+
+Two concatenates and stacks:
+
+```{r}
+(p1 + p2) / (p3 + p4)
+```
+
+------------------------------------------------------------------------
+
+I like patchwork a lot but as you can see, if you're plotting multiple plots with the same legend, then it tries to fit all of them which can be redundant. I don't believe there's any option for using a common legend with patchwork. But there's a solution!
+
+## ggarrange
+
+------------------------------------------------------------------------
+
+Same logic
+
+```{r}
+ggarrange(p1, p2, ncol=2, nrow=1)
+```
+
+------------------------------------------------------------------------
+
+Common legend
+
+```{r}
+ggarrange(p1,p2,ncol=2,nrow=1,common.legend = T)
+```
+
+------------------------------------------------------------------------
+
+```{r}
+ggarrange(p3,ggarrange(p1,p2,ncol=2,nrow = 1, common.legend = T),nrow=2,ncol=1, common.legend = T)
+```
+
+# Customization Options
+
+## Line Type
+
+| Value        | Word                  |
+|--------------|-----------------------|
+| linetype = 0 | linetype = "blank"    |
+| linetype = 1 | linetype = "solid"    |
+| linetype = 2 | linetype = "dashed"   |
+| linetype = 3 | linetype = "dotted"   |
+| linetype = 4 | linetype = "dotdash"  |
+| linetype = 5 | linetype = "longdash" |
+| linetype = 6 | linetype = "twodash"  |
+
+## Line Type
+
+![](images/linetype-demo-1.png)
+
+## Alpha
+
+![](images/alpha-demo-1.png)
+
+## Shape
+
+![](images/shape-demo-1.png)
+
+## Themes
+
+![](images/unnamed-chunk-9-1.png)
+
+## Themes from ggthemes
+
+![](images/unnamed-chunk-10-1.png)
+
+------------------------------------------------------------------------
+
+## Cheat Sheet
+
+![](images/FabxzmnX0AEwau0.jpeg)
+
+# Saving Plots
+
+## ggsave
+
+ggsave can be done in inches, centimeters, millimeters, pixels at a variety of heights, saved to different location. It can be saved as "png", "eps", "ps", "tex" (pictex), "pdf", "jpeg", "tiff", "png", "bmp", "svg"
+
+------------------------------------------------------------------------
+
+Option #1
+
+Could print plot, and it will default to saving last plot
+
+```{r}
+p1
+ggsave("~/Desktop/test.png", dpi = 300, width = 3, height = 3, units = "in")
+```
+
+------------------------------------------------------------------------
+
+Option #2
+
+Second argument is plot and the first argument is filename and you can specify full directory in filename
+
+```{r}
+ggsave("~/Desktop/test.png", p1, dpi = 300, width = 3, height = 3, units = "in")
+```
+
+------------------------------------------------------------------------
+
+Can also specify the path directory in path argument and filename in first argument
+
+```{r}
+ggsave("test.png", p1, path = "~/Desktop/", dpi = 300, width = 3, height = 3, units = "in")
+```
+
+------------------------------------------------------------------------
+
+There is also base R saving which operates as follows. Print plot after calling png, jpg, etc. Can change dpi and dimensions. Then call dev.off to save file and return control to screen.
+
+```{r}
+png("~/Desktop/test.png")
+p1
+dev.off()
+```
