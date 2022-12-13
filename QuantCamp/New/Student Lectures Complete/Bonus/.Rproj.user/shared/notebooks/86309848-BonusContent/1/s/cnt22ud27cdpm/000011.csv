@@ -1,0 +1,15 @@
+"0","report(m)
+"
+"1","We fitted a linear model (estimated using OLS) to predict mpg with qsec (formula: mpg
+~ qsec). The model explains a statistically significant and moderate proportion of
+variance (R2 = 0.18, F(1, 30) = 6.38, p = 0.017, adj. R2 = 0.15). The model's
+intercept, corresponding to qsec = 0, is at -5.11 (95% CI [-25.60, 15.37], t(30) =
+-0.51, p = 0.614). Within this model:
+
+  - The effect of qsec is statistically significant and positive (beta = 1.41, 95% CI
+[0.27, 2.55], t(30) = 2.53, p = 0.017; Std. beta = 0.42, 95% CI [0.08, 0.76])
+
+Standardized parameters were obtained by fitting the model on a standardized version
+of the dataset. 95% Confidence Intervals (CIs) and p-values were computed using a Wald
+t-distribution approximation.
+"

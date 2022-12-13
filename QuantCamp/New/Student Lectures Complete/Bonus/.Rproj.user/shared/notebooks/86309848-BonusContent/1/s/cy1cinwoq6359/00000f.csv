@@ -1,0 +1,14 @@
+"0","check_zeroinflation(model)
+"
+"1","[34m# Check for zero-inflation
+
+[39m"
+"1","   Observed zeros: 387
+"
+"1","  Predicted zeros: 374
+"
+"1","            Ratio: 0.97
+
+"
+"2","Model seems ok, ratio of observed and predicted zeros is within the tolerance range.
+"

@@ -1,0 +1,55 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+set.seed(20)
+A=matrix(sample.int(100,size=6),nrow=3,ncol=2)
+B=matrix(sample.int(100,size=6),nrow=2,ncol=3)
+```
+
+```{r}
+A + B # not comformable need to be same dims
+A - B # not comformable need to be same dims
+```
+
+```{r}
+A %*% B # 3x2 by 2x3
+B %*% A # 2x3 by 3x2
+```
+
+```{r}
+c(1,2,3) * c(4,5,6) # vector multiplication
+c(1,2,3) %*% c(4,5,6) # approach #1 for dot product
+sum(c(1,2,3) * c(4,5,6)) # approach #2 for dot product
+```
+
+
+
+```{r}
+set.seed(20)
+C=matrix(sample.int(100,size=3*3),nrow=3,ncol=3)
+D=matrix(sample.int(100,size=3*3),nrow=3,ncol=3)
+```
+
+```{r}
+C + D # same dims, addition works
+C - D # same dims, subtraction works
+C * D # same dims, elementwise works
+```
+
+```{r}
+A^-1 # matrix inversion
+```
+
+
+
+
+
+
+
+
+

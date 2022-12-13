@@ -1,0 +1,95 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_depth: 3
+
+---
+
+# Groundhog
+
+This is concerned with sustaining reproducible scripts.
+
+```{r}
+install.packages('groundhog') # install groundhog
+library(groundhog) # load groundhog
+pkgs <- c("tidyverse", "here") # what packages do you want
+groundhog.day <- '2022-08-25' # and at what point in time do you want those packages
+groundhog.library(pkgs, groundhog.day) # install and load those packages as they existed on that date
+```
+
+# Pacman
+
+Pacman allows you to load multiple packages at once
+
+```{r}
+install.packages("pacman")
+pacman::p_load(tidyverse, here)
+```
+
+If you use Pacman, you don't need to use Groundhog and vica versa. 
+
+# Here
+
+```{r}
+here::i_am("Level 1/Level 2/Level 3/test.Rmd")
+data("mtcars")
+write.csv(mtcars, here::here("Level 1", "Level 2", "Level 3", "mtcars.csv"))
+```
+
+# Report
+
+```{r}
+m <- lm(mpg ~ qsec, data = mtcars)
+summary(m)
+
+install.packages('report')
+library(report)
+
+report(m)
+```
+
+# Performance
+
+1. Linear relationship: There exists a linear relationship between the independent variable, x, and the dependent variable, y.
+
+2. Independence: The residuals are independent. In particular, there is no correlation between consecutive residuals in time series data.
+
+3. Homoscedasticity: The residuals have constant variance at every level of x.
+
+4. Normality: The residuals of the model are normally distributed.
+
+## Use check_model()
+
+```{r}
+library(performance)
+check_model(m)
+```
+
+
+## Use check_zeroinflation(model) and check_overdispersion() from library(glmmTMB) data(Salamanders)
+
+```{r}
+install.packages("glmmTMB")
+library(glmmTMB)
+data(Salamanders)
+model <- glm(count ~ spp + mined, family = poisson, data = Salamanders)
+
+check_overdispersion(model)
+
+check_zeroinflation(model)
+```
+
+```{r}
+model <- MASS::glm.nb(count ~ spp + mined, data = Salamanders)
+
+check_overdispersion(model)
+
+check_zeroinflation(model)
+```
+
+
+
+

@@ -1,0 +1,12 @@
+"0","groundhog.library(pkgs, groundhog.day) # 
+"
+"2","[36m---------------------------------------------------------------------------
+|IMPORTANT.
+|    To ensure reproducibility of your script, given timezone differences 
+|    and delays in updating different CRAN mirrors, don't use a date more 
+|    recent than two days ago: 2022-08-24. 
+|    To confirm you have read this message please type 'OK' [0m
+"
+"0","Ok"
+"2","[36m[0m
+"

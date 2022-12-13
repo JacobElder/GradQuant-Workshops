@@ -1,0 +1,14 @@
+"0","check_zeroinflation(model)
+"
+"1","[34m# Check for zero-inflation
+
+[39m"
+"1","   Observed zeros: 387
+"
+"1","  Predicted zeros: 298
+"
+"1","            Ratio: 0.77
+
+"
+"2","Model is underfitting zeros (probable zero-inflation).
+"
