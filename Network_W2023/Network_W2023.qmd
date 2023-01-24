@@ -1,0 +1,317 @@
+---
+title: "GradQuant: Introduction to Network Analysis in igraph"
+format:
+  revealjs:
+    toc-depth: 2
+    self-contained: true
+    citations-hover: true
+    code-link: true
+    code-block-bg: "#272822"
+    css: "./assets/slide-style.css"
+editor: visual
+width: 1360
+height: 800
+echo: true
+---
+
+# Network Analysis Introduction
+
+## What is a network?
+
+A network graph depicts interconnections between nodes.
+
+The presence or absence of each interconnection indicates whether there exists some form of connection between each pair of nodes.
+
+## Examples
+
+-   Google Maps
+-   Friendships between individuals
+-   Flight routes between cities
+-   Connections between brain regions.
+-   Communications networks, telephone, satellite, cable and internet
+-   Discrete words/phrases and their linguistic relations
+-   Atomic or molecular structures
+
+## Terms
+
+Nodes:
+
+# Install and Load Relevant Packages
+
+```{r}
+# install.packages("igraph") # For network analysis
+# install.packages("igraphdata") # For sample datasets
+# install.packages("RColorBrewer") # For colors
+library(igraph)
+library(igraphdata)
+library(RColorBrewer)
+```
+
+# Structures
+
+Below is a randomly created adjacency matrix. '1' denotes an edge (i.e., connection), and '0' denotes the absence of an edge
+
+```{r}
+set.seed(52)
+pilotAdj <- sapply(1:10, function(x) sample(c(0,1),10,replace=T))
+diag(pilotAdj) <- 0 # No self-connections
+print(pilotAdj)
+```
+
+------------------------------------------------------------------------
+
+This may seem abstract so let's add some labels to the nodes to make it more meaningful:
+
+```{r}
+people <- c("Luke","Anne","Zee","Yrian","Eleanor","Jazmin","Juan","Kalani","Julia","Brent")
+colnames(pilotAdj) <- people
+rownames(pilotAdj) <- people
+pilotAdj
+```
+
+## Adjacency Matrix
+
+In the adjacency matrix representation, a graph is represented in the form of a two-dimensional array. The size of the array is **V x V**, where V is the set of vertices. The following image represents the adjacency matrix representation:
+
+![](https://media.geeksforgeeks.org/wp-content/uploads/20200609204115/matrix.png)
+
+## Converting an Adjacency Matrix to a Graph
+
+An Adjacency list is an array consisting of the address of all the **linked lists**. The first node of the linked list represents the vertex and the remaining lists connected to this node represents the vertices to which this node is connected. This representation can also be used to represent a weighted graph. The linked list can slightly be changed to even store the weight of the edge.
+
+```{r}
+pilotGraph <- graph_from_adjacency_matrix(pilotAdj)
+pilotGraph
+```
+
+## Converting an igraph to an edgelist
+
+An edge list is a `list` or `array` of all the edges in a graph. Edge lists are one of the easier representations of a graph. In this implementation, the underlying data structure for keeping track of all the nodes and edges i**s a single list of pairs**. Each pair represents a single edge and is comprised of the *two unique IDs* of the nodes involved. Each `line`/`edge` in the graph gets an entry in the edge list, and that single data structure then encodes all nodes and relationships.
+
+```{r}
+pilotEList <- as_edgelist(pilotGraph)
+pilotEList
+```
+
+## Adjacency List
+
+In the adjacency list representation, a graph is represented as an array of linked list. The index of the array represents a vertex and each element in its linked list represents the  vertices that form an edge with the vertex. The following image represents the adjacency list representation: 
+
+![](https://media.geeksforgeeks.org/wp-content/uploads/20200609204414/linklist.png)
+
+## Converting to adjacency list
+
+```{r}
+as_adj_list(pilotGraph)
+```
+
+## Converting igraph back to an adjacency matrix
+
+Notably, you might see that an adjacency matrix is a "sparse matrix" and is distinct from the base R class of "matrix". To convert it, you will need to go a step further.
+
+```{r}
+pilotAdj <- as_adjacency_matrix(pilotGraph)
+pilotAdj
+```
+
+## Converting sparse matrix to base matrix
+
+```{r}
+pilotBaseM <- as.matrix(pilotAdj)
+pilotBaseM
+```
+
+# Simple Inspection
+
+------------------------------------------------------------------------
+
+## Show Vertices
+
+```{r}
+V(pilotGraph)
+```
+
+## Show Edges
+
+```{r}
+E(pilotGraph)
+```
+
+## Total Vertices
+
+```{r}
+gorder(pilotGraph)
+```
+
+## Total Edges
+
+```{r}
+gsize(pilotGraph)
+```
+
+## Basic Plot
+
+```{r}
+plot(pilotGraph)
+```
+
+# What is a Directed/Undirected Graph
+
+-   Directed Graph: Directed graphs are a class of graphs that don't presume symmetry or reciprocity in the edges established between vertices. In a directed graph, if ![a](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-0e55b0b3943237ccfc96979505679274_l3.svg "Rendered by QuickLaTeX.com"){alt="a"} and ![b](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-ad69adf868bc701e561aa555db995f1f_l3.svg "Rendered by QuickLaTeX.com"){alt="b"} are two vertices connected by an edge ![(a,b)](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-6086dce942f84541c047c9105b280dd9_l3.svg "Rendered by QuickLaTeX.com"){alt="(a,b)"}, this doesn't necessarily mean that an edge connecting ![(b,a)](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-fc715349920214526da509085ed93110_l3.svg "Rendered by QuickLaTeX.com"){alt="(b,a)"} also exists
+
+-   Undirected Graph: Symmetric; Undirected graphs are more specific. For them, there's an extra assumption regarding the reciprocity in the relationship between pairs of vertices connected by an edge. If an edge ![(a,b)](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-6086dce942f84541c047c9105b280dd9_l3.svg "Rendered by QuickLaTeX.com"){alt="(a,b)"} exists between two vertices ![a](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-0e55b0b3943237ccfc96979505679274_l3.svg "Rendered by QuickLaTeX.com"){alt="a"} and ![b](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-ad69adf868bc701e561aa555db995f1f_l3.svg "Rendered by QuickLaTeX.com"){alt="b"}, the edge ![(b,a)](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-fc715349920214526da509085ed93110_l3.svg "Rendered by QuickLaTeX.com"){alt="(b,a)"} also exists
+
+## Examples
+
+Examples of directed graphs include parents and their offspring; Twitter
+
+Examples of undirected graphs include pedestrian pathways, where movement between any two intersections of paths is possible in both directions; railways; Facebook; correlation matrices
+
+## Depiction of Directed Graph
+
+Our prior adjacency matrix we generated is a directed graph.
+
+```{r}
+print(pilotAdj)
+```
+
+## Depiction of Undirected Graph
+
+```{r}
+set.seed(48)
+pilotAdjUn <- sapply(1:10, function(x) sample(c(0,1),10,replace=T))
+pilotAdjUn[lower.tri(pilotAdjUn)] = t(pilotAdjUn)[lower.tri(pilotAdjUn)]
+diag(pilotAdjUn) <- 0
+pilotAdjUn
+pilotGraphUn <- graph_from_adjacency_matrix(pilotAdjUn, mode="undirected")
+is.directed(pilotGraphUn)
+```
+
+# What is a weighted/unweighted graph
+
+# Attributes
+
+## Vertex Attributes
+
+```{r}
+partyAtts <- sample(c("Dem","Rep"), gorder(pilotGraph) ,replace = T) # Random attributes
+partyAtts # Inspect
+pilotGraph <-set_vertex_attr(pilotGraph, "party", value = partyAtts) # Assign attributes
+vertex_attr(pilotGraph) # Check vertex attributes
+```
+
+## Edge Attributes
+
+```{r}
+friendshipAtts <- rnorm(gsize(pilotGraph))
+friendshipAtts
+pilotGraph <-set_edge_attr(pilotGraph, "friendship", value = friendshipAtts) # Assign attributes
+edge_attr(pilotGraph) # Check vertex attributes
+```
+
+# Subsetting Graph
+
+## We may want to subset all nodes that are "Dem":
+
+```{r}
+V(pilotGraph)[party=="Dem"]
+```
+
+## We may want to create a subsettted graph of only "Dem":
+
+```{r}
+induced_subgraph(pilotGraph, vids=which(V(pilotGraph)$party=="Dem") )
+```
+
+## We may want to subset all of the edges that include "Anne":
+
+```{r}
+E(pilotGraph)[[inc("Anne")]]
+```
+
+## We may want to subset all edges with a friendship greater than 0:
+
+```{r}
+E(pilotGraph)[[friendship>0]]
+```
+
+## Head of nth edge
+
+Here, all edges
+
+```{r}
+head_of(pilotGraph, E(pilotGraph))
+```
+
+## Incident
+
+Any edges to or from a given vertex
+
+```{r}
+incident(pilotGraph, "Anne", mode=c("all"))
+```
+
+## Basic Plotting by Attributes
+
+You can conditionally assign colors based on some attribute and plot based off that attribute. igraph vertices have an attribute for color.
+
+```{r}
+V(pilotGraph)$color <- ifelse(V(pilotGraph)$party == "Dem", "blue", "red")
+plot(pilotGraph, vertex.label.color="black")
+```
+
+# Base Plotting
+
+## Layouts
+
+```{r}
+# Plot the graph object pilotAdj in a circle layout
+plot(pilotAdj, vertex.label.color = "black", layout = layout_in_circle(pilotAdj))
+
+# Plot the graph object pilotAdj in a Fruchterman-Reingold layout 
+plot(pilotAdj, vertex.label.color = "black", layout = layout_with_fr(pilotAdj))
+
+# Plot the graph object pilotAdj in a Tree layout 
+m <- layout_as_tree(pilotAdj)
+plot(pilotAdj, vertex.label.color = "black", layout = m)
+
+# Plot the graph object pilotAdj using igraph's chosen layout 
+m1 <- layout_nicely(pilotAdj)
+plot(pilotAdj, vertex.label.color = "black", layout = m1)
+```
+
+## Vary Edge Thickness by Edge Weight/Attribute
+
+```{r}
+m1 <- layout_nicely(pilotGraph)
+plot(pilotGraph, 
+        vertex.label.color = "black", 
+        edge.color = 'black',
+        edge.width = E(pilotGraph)$friendship,
+        layout = m1)
+```
+
+# Using a Real Dataset: 'UK Faculty'
+
+```{r}
+data("UKfaculty")
+```
+
+## Can you inspect the UK
+
+------------------------------------------------------------------------
+
+```{r}
+# select colors
+colors = brewer.pal(4, "Dark2")
+# assign colors to groups
+V(UKfaculty)$color = sapply(V(UKfaculty)$Group, function(x) colors[x])
+
+plot(UKfaculty, layout = layout_nicely(UKfaculty, dim = 2),
+     vertex.color = V(UKfaculty)$color, vertex.frame.color = NA,
+     vertex.label = NA, vertex.shape = 'square',
+     vertex.size = 3.5, edge.arrow.size = 0.3, edge.curved = TRUE,
+     edge.width = E(UKfaculty)$weight ^ 0.8,
+     edge.color = rgb(0, 0, 0, alpha = 0.1))
+title("UK Faculty Friendship Network (Directed)", cex.main = 1)
+```

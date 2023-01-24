@@ -1,0 +1,1532 @@
+---
+title: "GradQuant: Introduction to Programming in R"
+format:
+  revealjs:
+    toc-depth: 2
+    self-contained: true
+    citations-hover: true
+    code-link: true
+    code-block-bg: "#272822"
+    css: "./assets/slide-style.css"
+editor: visual
+width: 1360
+height: 800
+echo: true
+---
+
+# Introduction
+
+------------------------------------------------------------------------
+
+## Installing Packages
+
+```{r}
+# install.packages("pacman")
+```
+
+Can you install tidyverse?
+
+## Installing Packages
+
+```{r}
+# install.packages("tidyverse")
+```
+
+## Loading Packages
+
+```{r}
+library(pacman)
+```
+
+Can you load tidyverse?
+
+## Loading Packages
+
+```{r}
+library(tidyverse)
+```
+
+## Loading Packages
+
+Pacman allows you to load multiple packages at once
+
+```{r}
+library(pacman)
+#install.packages("Rmisc")
+p_load(tidyverse,
+       Rmisc
+)
+
+```
+
+Pacman also allows you to unload multiple packages at once
+
+```{r}
+p_unload(tidyverse,
+         Rmisc
+         )
+
+```
+
+## Asking for Help
+
+```{r}
+?cor
+```
+
+------------------------------------------------------------------------
+
+Can you ask for help for using linear regression (Hint: The linear regression function is lm() )
+
+------------------------------------------------------------------------
+
+```{r}
+?lm
+```
+
+## Working Directory
+
+What is the working directory?
+
+```{r}
+getwd()
+```
+
+## Working Directory
+
+How to change the working directory?
+
+```{r}
+# setwd("~")
+```
+
+# Operations
+
+------------------------------------------------------------------------
+
+## R as a Basic Calculator
+
+Print the number 2
+
+```{r}
+2
+```
+
+Add the number 2 and the number 1 together
+
+```{r}
+2 + 1
+```
+
+Subtract 2 from 6
+
+```{r}
+6 - 2
+```
+
+Multiply 2 by 3
+
+```{r}
+2 * 3
+```
+
+## R as a Basic Calculator
+
+Square 2
+
+```{r}
+2^2
+```
+
+Find the remainder of 7 after divison by 2
+
+```{r}
+7%%2
+```
+
+Square root of 4
+
+```{r}
+sqrt(4)
+```
+
+## R as a Basic Calculator
+
+Assignment: Derive the area for a circle if the radius is 37.5. (Hint: pi is stored in R as "pi")
+
+## Answer
+
+```{r}
+pi * 37.5^2
+```
+
+## R as a Basic Calculator
+
+Assign the number 2 to a variable titled "two" (Hint: Use "\<-" or "=" for assignment)
+
+## Answer
+
+```{r}
+two <- 2
+```
+
+Use auto-printing
+
+```{r}
+two
+```
+
+Use explicit printing
+
+```{r}
+print(two)
+```
+
+------------------------------------------------------------------------
+
+Generate a sequence of numbers from 1 to 10 and assign to "domain"
+
+```{r}
+domain <- 1:10
+```
+
+------------------------------------------------------------------------
+
+Add sequence of numbers to variable two and assign to variable "range"
+
+## Answer
+
+```{r}
+range <- two + domain
+```
+
+------------------------------------------------------------------------
+
+Create a vector of numbers 3, 6, 9 and assign to variable "dots" Note: c() stands for concatenate. Vectors contain variables only of same class
+
+```{r}
+dots <- c(3, 6, 9)
+```
+
+------------------------------------------------------------------------
+
+Plot dots
+
+Note: This is base R plotting which is generally less favored than ggplot2. It can be useful for quick plotting, like here.
+
+```{r}
+plot(dots)
+```
+
+------------------------------------------------------------------------
+
+Try to create a vector with a string at end.
+
+------------------------------------------------------------------------
+
+## Answer
+
+```{r}
+broken <- c(3, 6, 9, "broke")
+```
+
+What do you notice about when you add a different class to the end of the vector?
+
+------------------------------------------------------------------------
+
+```{r}
+broken
+```
+
+------------------------------------------------------------------------
+
+Assignment: Generate a slope-intercept function with a y-intercept (b) of 2, a slope of 4, and a domain set of numbers containing 2, 7, -1, 5, 3, 2, 11, 3. Write the function as y = mx + b by storing each number as a variable.
+
+------------------------------------------------------------------------
+
+## Answer
+
+```{r}
+m = 4
+b = 2
+x = c(2, 7, -1, 5, 3, 2, 11, 3)
+
+y = m*x + b
+```
+
+------------------------------------------------------------------------
+
+Assignment: Print the range assigned as "y".
+
+------------------------------------------------------------------------
+
+## Answer
+
+```{r}
+print(y)
+```
+
+------------------------------------------------------------------------
+
+Assignment: Plot "y"
+
+------------------------------------------------------------------------
+
+## Answer
+
+```{r}
+plot(y)
+```
+
+# Classes
+
+------------------------------------------------------------------------
+
+Examine the class
+
+```{r}
+class(y)
+```
+
+## What is its class?
+
+------------------------------------------------------------------------
+
+## There are a variety of atomic (i.e., fundamental) classes...
+
+## Character
+
+```{r}
+class("apple")
+class("p")
+class("1")
+```
+
+## Numeric (real numbers)
+
+```{r}
+class(1.23343)
+class(pi)
+class(2.0)
+```
+
+## Integer
+
+```{r}
+class(1)
+class(2)
+class(two)
+```
+
+## Logical (True/False)
+
+```{r}
+class(TRUE)
+class(FALSE)
+class(F)
+class(T)
+```
+
+## Missing Values
+
+```{r}
+NA
+NaN
+```
+
+## Categorical Factors
+
+This is not a class but... Variables can be converted to categorical factors for data analysis. Note: If a variable is a character and is used in a statistical model, it will default to a factor.
+
+```{r}
+fruit <- c("apple", "orange", "banana")
+fruit
+fruit <- as.factor(fruit)
+fruit
+```
+
+## Class Coercion
+
+You can explicitly coerce your objects to become other classes. For example, 1's and 0's can be converted to logical TRUEs and FALSEs
+
+```{r}
+binary <- c(1,0,0,1)
+binary
+binary <- as.logical(binary)
+binary
+```
+
+Numbers can be converted to characters
+
+```{r}
+numbers <- c(1,2,3)
+numbers
+numbers <- as.character(numbers)
+numbers
+
+```
+
+## Matrices
+
+Matrices are vectors with another dimension, so n rows by m columns. Like vectors, they must be of one class \# and will otherwise be coerced.
+
+# You can create an empty matrix of 3 rows and 2 columns.
+
+```{r}
+m <- matrix(nrow = 3, ncol = 2)
+m
+```
+
+## Matrices
+
+You can create a populated matrix of 3 rows and 3 columns.
+
+```{r}
+m <- matrix(1:9, nrow=3, ncol=3)
+m
+```
+
+## Matrices
+
+You can bind together vectors to create a matrix. For example, using cbind() to bind columns.
+
+```{r}
+numbers1 <- c(1,2,3)
+numbers2 <- c(4,5,6)
+cnums <- cbind(numbers1,numbers2)
+cnums
+```
+
+## Matrices
+
+For example, using rbind() to bind rows.
+
+```{r}
+rnums <- rbind(numbers1, numbers2)
+rnums
+
+```
+
+------------------------------------------------------------------------
+
+For special cases, you can go beyond a 2-dimensional object using arrays. See a 2x5x4 array of NAs/missing values below:
+
+```{r}
+dim(array(NA, c(2,5,4)))
+```
+
+## Lists
+
+Lists are a special type of object that can contain elements of different classes. Below is a list:
+
+```{r}
+fruitandnums <- list(1, "apple", 3)
+fruitandnums
+```
+
+## Lists
+
+Lists can also contain objects of different types and sizes. Here is a list containing a matrix, a list, and a vector.
+
+```{r}
+hodgepodge <- list(m, fruitandnums, numbers1)
+hodgepodge
+```
+
+## Lists
+
+Lists can also be named
+
+```{r}
+hodgepodge <- list(my_mat = m, my_fruit = fruitandnums, my_number = numbers1)
+hodgepodge
+```
+
+# Operations
+
+Arithmetic Operations were covered above \# +, -, /, \*, \^, sqrt(), %%, etc.
+
+But there are other operations as well.
+
+## Relative Operations
+
+```{r}
+1 < 2
+1 <= 1
+1 == 1
+T == T
+T > F
+"a" == "a"
+"a" != "b"
+```
+
+## Logical operations: AND
+
+& is AND
+
+returns true when both conditions are true
+
+```{r}
+T & T
+T & F
+c(T,T) & c(T,F)
+(.5 > 0) & (1 > .5)
+(1 > 2) & (1 > .5)
+```
+
+## Logical perations: OR
+
+\| is OR
+
+returns true when at-least one of the condition is true
+
+```{r}
+T | T
+T | F
+F | F
+c(T,T,F) | c(T,F,F)
+(.5 > 0) | (1 > .5)
+(1 > 2) | (1 > .5)
+
+```
+
+## Logical Operations: Negation
+
+! is negation
+
+```{r}
+!(T | F)
+!(100 > 0)
+```
+
+## Logical Operations: which()
+
+which can be useful for logical vectors, determining the indices of which are TRUE
+
+```{r}
+which(c(T,F,T,F,T,F,T))
+```
+
+# Reading and Writing Data
+
+## Load and inspect base R's "mtcars" dataset
+
+Load mtcars dataset
+
+```{r}
+data("mtcars")
+```
+
+Inspect it
+
+```{r}
+#View(mtcars)
+```
+
+------------------------------------------------------------------------
+
+Inspect the column names
+
+------------------------------------------------------------------------
+
+```{r}
+colnames(mtcars)
+```
+
+## Inspect mtcars
+
+Examine dimensions of the data
+
+------------------------------------------------------------------------
+
+```{r}
+dim(mtcars)
+```
+
+------------------------------------------------------------------------
+
+Examine the head (top 6 rows) and tail (bottom 6 rows) of mtcars
+
+------------------------------------------------------------------------
+
+```{r}
+head(mtcars)
+tail(mtcars)
+```
+
+What is in the bottom six and top six rows?
+
+## Inspect dataset
+
+What kind of class is mtcars?
+
+------------------------------------------------------------------------
+
+Examine class of dataset
+
+```{r}
+class(mtcars)
+```
+
+------------------------------------------------------------------------
+
+You can also inspect and call variable names using "\$"
+
+```{r}
+mtcars$mpg
+mtcars$cyl
+mtcars$disp
+```
+
+------------------------------------------------------------------------
+
+What kind of class is mpg?
+
+------------------------------------------------------------------------
+
+Check class of mpg
+
+------------------------------------------------------------------------
+
+```{r}
+class(mtcars$mpg)
+```
+
+# Indexing
+
+------------------------------------------------------------------------
+
+Index first row
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[1,]
+```
+
+------------------------------------------------------------------------
+
+Index second row
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[2,]
+```
+
+------------------------------------------------------------------------
+
+Index 3rd through 5th rows
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[3:5,]
+```
+
+------------------------------------------------------------------------
+
+Index 4th column
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[,4]
+```
+
+You can index without the comma but it will be interpreted as a data.frame, in contrast to above being a vector.
+
+```{r}
+mtcars[4]
+```
+
+------------------------------------------------------------------------
+
+Index 2 and 5th column
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[,c(2,5)]
+```
+
+------------------------------------------------------------------------
+
+Index column for "cyl"
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[,"cyl"]
+```
+
+------------------------------------------------------------------------
+
+Index column for "cyl" and "wt"
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[,c("cyl","wt")]
+```
+
+------------------------------------------------------------------------
+
+Index column for "cyl" and "wt" and move "wt" before "cyl"
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[,c("wt","cyl")]
+```
+
+------------------------------------------------------------------------
+
+Index 3rd row and 5th column
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[3,5]
+```
+
+------------------------------------------------------------------------
+
+Index 2nd, 3rd, and 5th column and 3rd through 6th rows
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[3:6, c(2,3,5)]
+```
+
+------------------------------------------------------------------------
+
+Subset rows of wt that are less than 3
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[mtcars$wt < 3,]
+```
+
+------------------------------------------------------------------------
+
+Subset rows where vs is 1
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[mtcars$vs == 1,]
+```
+
+------------------------------------------------------------------------
+
+Subset rows where carb is NOT 4
+
+------------------------------------------------------------------------
+
+```{r}
+mtcars[mtcars$carb != 4,]
+```
+
+# Writing
+
+-   There are multiple different file types that could be used. Probably the most commonly used are CSVs (comma separated values) which represent your data as text delimited by commas.
+-   While you may open CSV files in Excel, there are some important to distinctions.
+-   CSV is a plain text format with a series of values separated by commas whereas Excel is a binary file that holds information about all the worksheets in a workbook.
+-   CSV file can't perform operations on data while Excel can perform operations on the data.
+-   Comparing CSV vs XLSX, CSV files are faster and also consumes less memory whereas Excel consumes more memory while importing data.
+
+------------------------------------------------------------------------
+
+## Writing
+
+While less commonly used, you can also read and write text data as tab delimited, semicolon delimited, space delimited, etc.
+
+There are also proprietary data types for software such as SPSS (.sav), STATA (.dta), SAS (.sas7bdat)
+
+------------------------------------------------------------------------
+
+Write csv to your working directory (comma delimited)
+
+```{r}
+#install.packages("here")
+library(here)
+i_am("./IntroR_W2023/GQ_IntroR.qmd")
+write.csv(mtcars, "mtcars.csv", row.names = F)
+```
+
+Can also write csv to you working directory that is semicolon delimited
+
+```{r}
+write.table(mtcars, file="mtcarsSC.csv",quote=TRUE, sep = ";")
+```
+
+Can also write tsv to your working directory
+
+```{r}
+write.table(mtcars, file = "mtcars.tsv", row.names=FALSE, sep="\t")
+```
+
+------------------------------------------------------------------------
+
+To write and import xlsx files, you will need the xlsx package
+
+```{r}
+#install.packages('xlsx')     
+library(xlsx)
+write.xlsx(mtcars, file = "mtcars.xlsx", row.names = T)
+```
+
+------------------------------------------------------------------------
+
+The "haven" package will allow you to read and write SPSS files such as .sav, SAS files, and STATA files
+
+```{r}
+#install.packages("haven")
+library(haven)
+haven::write_sav(mtcars, "mtcars.sav")
+```
+
+------------------------------------------------------------------------
+
+You can save you environment/workspace as well
+
+```{r}
+save.image("mtcars_space.RData")
+```
+
+------------------------------------------------------------------------
+
+Clear workspace
+
+```{r}
+rm()
+```
+
+Load workspace
+
+```{r}
+load("mtcars_space.RData")
+```
+
+# Reading Data
+
+Base read csv
+
+```{r}
+df <- read.csv("mtcars.csv",header = T)
+```
+
+------------------------------------------------------------------------
+
+readr's read_csv much faster
+
+```{r}
+df <- readr::read_csv("mtcars.csv")
+```
+
+------------------------------------------------------------------------
+
+fread 2.5x faster than read_csv fread is fast and efficient but is also cool because it automatically detects the number of columns, rows, and the delimiter! So it will determine if your input is tab separated or comma separated fo example.
+
+```{r}
+df <- data.table::fread("mtcars.csv")
+```
+
+------------------------------------------------------------------------
+
+We can also read in that mtcars dataset again as a tsv or as a ; separated dataset
+
+```{r}
+mtcars <- read.csv("mtcarsSC.csv",header = T, sep = ";")
+```
+
+------------------------------------------------------------------------
+
+Read in the tsv file with readr
+
+```{r}
+mtcars <- read_tsv("mtcars.tsv")
+```
+
+Read in the tsv file with base
+
+```{r}
+mtcars <- read.table("mtcars.tsv", sep = "\t", header = T)
+```
+
+------------------------------------------------------------------------
+
+Importing a sav file from SPSS
+
+```{r}
+# read_sav("mtcars.sav")
+```
+
+------------------------------------------------------------------------
+
+Reading in an xlsx file
+
+```{r}
+dfxlsx <- read.xlsx("mtcars.xlsx", header = T, sheetIndex = 1, row.names = 1)
+```
+
+## Functions for Reading Files
+
+-   read.table, read.csv, for reading tabular data
+-   readLines, for reading lines of a text file
+-   source, for reading in R code files (inverse of dump)
+-   dget, for reading in R code files (inverse of dput)
+-   load, for reading in saved workspaces
+-   unserialize, for reading single R objects in binary form
+
+## Functions for Writing Files
+
+-   write.table, for writing tabular data to text files (i.e. CSV) or connections
+-   writeLines, for writing character data line-by-line to a file or connection
+-   dump, for dumping a textual representation of multiple R objects
+-   dput, for outputting a textual representation of an R object
+-   save, for saving an arbitrary number of R objects in binary format (possibly compressed) to a file.
+-   serialize, for converting an R object into a binary format for outputting to a connection (or file).
+
+## Inspect
+
+What is the row number for this dataset?
+
+```{r}
+nrow(df)
+```
+
+What is the column number for this dataset?
+
+```{r}
+ncol(df)
+```
+
+What are the dimensions for this dataset? Use the function for this.
+
+```{r}
+dim(df)
+```
+
+What are the variable names for the dataset?
+
+```{r}
+colnames(df)
+```
+
+# Control Flow
+
+We want to convert Farenheit to Celsius Farenheit to Celsius is (F-32)\*(5/9)
+
+## Farenheit to Celsius
+
+What is 72F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+(72-32)*(5/9)
+```
+
+------------------------------------------------------------------------
+
+What is 50F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+(50-32)*(5/9)
+```
+
+------------------------------------------------------------------------
+
+What is 32F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+(32-32)*(5/9)
+```
+
+------------------------------------------------------------------------
+
+What is 102F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+(102-32)*(5/9)
+```
+
+------------------------------------------------------------------------
+
+What is 20F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+(20-32)*(5/9)
+```
+
+------------------------------------------------------------------------
+
+We have to re-write or copy and paste that code each time. Is there a more efficient way?
+
+------------------------------------------------------------------------
+
+## Custom F-to-C Function
+
+```{r}
+FtoC <- function(temp_F) {
+  temp_C <- (temp_F - 32) * 5 / 9
+  return(temp_C)
+}
+```
+
+------------------------------------------------------------------------
+
+## Breaking Down Custom Function Logic
+
+```{r}
+functionName <- function(arg1, arg2){
+  processes
+  return(processes)
+}
+```
+
+## Returning to the Redundant Code
+
+What is 72F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+FtoC(72)
+```
+
+------------------------------------------------------------------------
+
+What is 50F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+FtoC(50)
+```
+
+------------------------------------------------------------------------
+
+What is 32F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+FtoC(32)
+```
+
+------------------------------------------------------------------------
+
+What is 102F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+FtoC(102)
+```
+
+------------------------------------------------------------------------
+
+What is 20F in C?
+
+------------------------------------------------------------------------
+
+```{r}
+FtoC(20)
+```
+
+Ultimately, you see that less code is needed here.
+
+------------------------------------------------------------------------
+
+## Order of Arguments
+
+Exercise: Concatenating two strings with paste0 produces: paste0('a','b')... 'ab'.
+
+Write a function called 'fence' that takes two parameters called original and wrapper and returns a new string that has the wrapper character at the beginning and end of the original. A call to your function as fence('word','\*') should produce '\*word\*'
+
+------------------------------------------------------------------------
+
+```{r}
+fence <- function(input, wrapper){
+  paste0(wrapper, input, wrapper)
+}
+```
+
+------------------------------------------------------------------------
+
+Wrap "+" around "pizza"
+
+------------------------------------------------------------------------
+
+```{r}
+fence("pizza","+")
+
+```
+
+------------------------------------------------------------------------
+
+What happens if you switch the order though?
+
+------------------------------------------------------------------------
+
+```{r}
+fence("+","pizza")
+```
+
+------------------------------------------------------------------------
+
+Order of inputs matters! If you order the inputs in the order of the arguments, it will make no difference.
+
+But if you order the inputs in a different order than the arguments in how the function is specified, you must make arguments explicit. For example...
+
+```{r}
+fence(wrapper="+",input="pizza")
+```
+
+------------------------------------------------------------------------
+
+## Default Arguments
+
+We can also add defaults for the functions. For example, maybe if someone doesn't specify a wrapper, we assume they just want to print the word without a wrapper.
+
+Do you have an intuition for how we might implement that?
+
+------------------------------------------------------------------------
+
+Ok, here's what it would look like:
+
+```{r}
+fence <- function(input, wrapper=""){
+  paste0(wrapper, input, wrapper)
+}
+```
+
+------------------------------------------------------------------------
+
+Try it out on "pizza" as the input word without a wrapper using the variant of the function with an empty default for the wrapper
+
+```{r}
+fence("pizza")
+```
+
+------------------------------------------------------------------------
+
+You may have noticed that in the first example for converting temperatures, we used a return argument. While for this example, we did not. return is not required per se. If you did not call return, the custom function will return the last output of the function. But if you want to be explicit or call something that is not the last output, you should use return().
+
+------------------------------------------------------------------------
+
+## Weighted Mean
+
+We want to estimate the average miles per gallon of each car
+
+```{r}
+mean(mtcars$mpg)
+```
+
+------------------------------------------------------------------------
+
+Now, we want to compute the mean miles per gallon of the car weighted by multiple different variables
+
+Weighted by weight
+
+```{r}
+sum( mtcars$mpg * mtcars$wt ) / sum(mtcars$wt)
+```
+
+Weighted by 1/4 mile time
+
+```{r}
+sum( mtcars$mpg * mtcars$qsec ) / sum(mtcars$qsec)
+```
+
+Weighted by gross horsepower
+
+```{r}
+sum( mtcars$mpg * mtcars$hp ) / sum(mtcars$hp)
+```
+
+Weighted by number of carburetors
+
+```{r}
+sum( mtcars$mpg * mtcars$carb ) / sum(mtcars$carb)
+```
+
+------------------------------------------------------------------------
+
+However, doing this requires more code than is necessary.
+
+Can you create a weighted mean custom function?
+
+![W =\\frac{\\sum\_{i=1}\^{n} w\_{i} X\_{i}}{\\sum\_{i=1}\^{n} w\_{i}}](https://www.gstatic.com/education/formulas2/472522532/en/weighted_average_formula.svg){alt="W =\\frac{\\sum_{i=1}^{n} w_{i} X_{i}}{\\sum_{i=1}^{n} w_{i}}"}
+
+------------------------------------------------------------------------
+
+## Answer
+
+```{r}
+wMean <- function(average, weighted){
+  output <- sum(average * weighted) / sum(weighted)
+  return(output)
+}
+```
+
+------------------------------------------------------------------------
+
+Try out mpg weighted by wt, qsec, hp, carb
+
+------------------------------------------------------------------------
+
+```{r}
+attach(mtcars)
+wMean(mpg, wt)
+wMean(mpg, qsec)
+wMean(mpg, hp)
+wMean(mpg, carb)
+detach(mtcars)
+```
+
+------------------------------------------------------------------------
+
+## Hypotenuse Custom Function
+
+Can you create a formula for calculating the hypotenuse of a triangle?
+
+$a^2 + b^2 = h^2$
+
+$\sqrt{a^2 + b^2} = h$
+
+------------------------------------------------------------------------
+
+```{r}
+hyp <- function(side_a, side_b) {
+  a <- side_a^2
+  b <- side_b^2
+  h <- sqrt(a + b)
+  return(h)
+}
+
+```
+
+------------------------------------------------------------------------
+
+Test it out!
+
+```{r}
+hyp(3, 4)
+hyp(9, 12)
+hyp(3,5)
+
+```
+
+------------------------------------------------------------------------
+
+## Local Variables
+
+You'll see that h is defined within the function. Let's try and print it outside the function.
+
+```{r}
+try( print(h) )
+```
+
+------------------------------------------------------------------------
+
+Woah, there's an error. Why is that?
+
+Variables defined a function are what are called "local variables" that are only available and used in the local environment within the function but not for usage outside the function in the global environment.
+
+## Null Arguments
+
+Perhaps we want to implement a function which defaults to use a default input if the argument is left empty. How would we accomplish that? Let's say for the hypotenuse function we wanted to use side a's value if side b was not entered as an input.
+
+------------------------------------------------------------------------
+
+```{r}
+hyp <- function(side_a, side_b = NULL) {
+  a <- side_a^2
+  b <- ifelse(is.null(side_b), a, side_b^2)
+  h <- sqrt(a + b)
+  return(h)
+}
+```
+
+------------------------------------------------------------------------
+
+These should be identical
+
+```{r}
+hyp(9, 9)
+hyp(9)
+```
+
+------------------------------------------------------------------------
+
+## Control program flow with \`if\` and \`else\` statements
+
+```{r}
+x <- 1 # input of 1
+if (x == 0) {
+  paste(x, "is exactly 0")
+} else if (x < 0) {
+  paste(x, "is negative")
+} else {
+  paste(x, "is positive")
+} 
+
+```
+
+------------------------------------------------------------------------
+
+```{r}
+x <- -1 # input of -1
+if (x == 0) {
+  paste(x, "is exactly 0")
+} else if (x < 0) {
+  paste(x, "is negative")
+} else {
+  paste(x, "is positive")
+} 
+```
+
+------------------------------------------------------------------------
+
+Let's combine it with what we've learned about custom functions to make it less code:
+
+------------------------------------------------------------------------
+
+```{r}
+posOneg <- function(x){
+  if (x == 0) {
+  paste(x, "is exactly 0")
+  } else if (x < 0) {
+    paste(x, "is negative")
+  } else {
+    paste(x, "is positive")
+  } 
+}
+posOneg(1)
+posOneg(-1)
+posOneg(0)
+```
+
+## For loops
+
+```{r}
+for (i in c(1, 2, 3, 4, 5)) {
+  # "i" will take on each value of the vector 1:5
+  print(paste("This is loop iteration", i))
+}
+```
+
+## Loop Over Days of the Week
+
+```{r}
+days_of_the_week <- c("Mon", "Tues", "Wed", "Thur", "Fri", "Sat", "Sun")
+
+for (i in days_of_the_week) {
+  print(paste("Today is", i))
+}
+```
+
+------------------------------------------------------------------------
+
+Can you loop over each row in mpg and print each row?
+
+------------------------------------------------------------------------
+
+```{r}
+for(n in 1:nrow(mtcars)){
+  print(mtcars$mpg[n])
+}
+```
+
+## Apply Functions
+
+apply 1 over rows, 2 over columns, c(1,2) over both columns and rows
+
+```{r}
+## Sum over rows
+
+apply(mtcars, 1, sum)
+
+## Mean over columns
+
+apply(mtcars, 2, mean)
+```
+
+------------------------------------------------------------------------
+
+rowMeans, colMeans, rowSums, colSums are wrappers of apply functions
+
+```{r}
+rowMeans(mtcars)
+colMeans(mtcars)
+rowSums(mtcars)
+colSums(mtcars)
+```
+
+------------------------------------------------------------------------
+
+## There are a whole family of apply functions...
+
+-   apply apply(x, MARGIN, FUN) Apply a function to the rows or columns or both Data frame or matrix vector, list, array
+
+-   lapply lapply(X, FUN) Apply a function to all the elements of the input List, vector or data frame list
+
+-   sapply sapply(X, FUN) Apply a function to all the elements of the input List, vector or data frame vector or matrix
+
+## Combining for Loop and Custom Functions!
+
+Use for loops to examine the weighted mean of mpg using cyl, disp, hp, drat, wt, and qsec as weights Let's also compare the weighted means to the overall mean
+
+------------------------------------------------------------------------
+
+```{r}
+preds <- c("cyl", "disp", "hp", "drat", "wt", "qsec")
+wm_output <- vector()
+for (p in preds) {
+  wm_output[p] <- wMean(mtcars['mpg'], mtcars[p])
+}
+wm_output
+wm_output - mean(mtcars[,'mpg'])
+```
+
+------------------------------------------------------------------------
+
+## While statement
+
+While statements will keep on going until the condition is fulfilled (i.e., TRUE). Be careful with these because if your code is 'broken' and the condition is unable to be made TRUE, it will run indefinitely.
+
+```{r}
+filler <- 0
+while(filler < 100000000){
+  filler <- filler + 1
+}
+```
+
+# Merge Dataframes
+
+Create origin dataframe
+
+```{r}
+producers <- data.frame(   
+    surname =  c("Spielberg","Scorsese","Hitchcock","Tarantino","Polanski"),    
+    nationality = c("US","US","UK","US","Poland"),    
+    stringsAsFactors=FALSE)
+
+```
+
+Create destination dataframe
+
+```{r}
+movies <- data.frame(    
+    surname = c("Spielberg",
+		"Scorsese",
+                "Hitchcock",
+              	"Hitchcock",
+                "Spielberg",
+                "Tarantino",
+                "Polanski"),    
+    title = c("Super 8",
+    		"Taxi Driver",
+    		"Psycho",
+    		"North by Northwest",
+    		"Catch Me If You Can",
+    		"Reservoir Dogs","Chinatown"),                
+     		stringsAsFactors=FALSE)
+```
+
+## Inspect Structure of Dataframe
+
+```{r}
+str(movies)
+str(producers)
+```
+
+------------------------------------------------------------------------
+
+Merge two datasets
+
+```{r}
+m1 <- merge(producers, movies, by = "surname")
+m1
+```
+
+------------------------------------------------------------------------
+
+Can also merge by different variable names for first and second dataframe using by.x and by.y
+
+## Inner Join
+
+An inner join (actually a natural join), is the **most usual join of data sets** that you can perform. It consists on merging two dataframes in one that contains the common elements of both, as described in the following illustration:
+
+![](images/Screen%20Shot%202023-01-18%20at%206.03.52%20PM.png){width="217"}
+
+```{r}
+m1 <- merge(producers, movies, by = "surname")
+```
+
+## Outer (Full) Join
+
+The outer join, also known as full outer join or full join, **merges all the columns of both data sets into one** for all elements.
+
+![](images/Screen%20Shot%202023-01-18%20at%205.59.59%20PM.png){width="217"}
+
+```{r}
+merge(producers, movies, by = "surname", all = TRUE)
+```
+
+## Left Join
+
+The left join in R consist on **matching all the rows in the first data frame with the corresponding values on the second**. Recall that 'Jack' was on the first table but not on the second.
+
+![](images/Screen%20Shot%202023-01-18%20at%206.00.23%20PM.png){width="217"}
+
+```{r}
+merge(producers, movies, by = "surname", all.x = TRUE)
+```
+
+## Right Join
+
+The right join in R is the opposite of the left outer join. In this case, the merge consists on **joining all the rows in the second data frame with the corresponding on the first**.
+
+![](images/Screen%20Shot%202023-01-18%20at%206.00.39%20PM.png){width="217"}
+
+```{r}
+merge(producers, movies, by = "surname", all.y = TRUE)
+```
+
+# Filtering and Wrangling
+
+## Sorting
+
+```{r}
+mtcars <- mtcars[order(mtcars$mpg), ]
+mtcars
+```
+
+## Filtering
+
+```{r}
+mtcars4 <- subset(mtcars, carb==4)
+mtcars4
+```
+
+## Pivoting
+
+```{r}
+wideMtcars <- mtcars %>% pivot_wider(names_from = gear, values_from = mpg)
+wideMtcars
+```
