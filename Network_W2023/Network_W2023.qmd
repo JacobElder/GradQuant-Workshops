@@ -32,10 +32,6 @@ The presence or absence of each interconnection indicates whether there exists s
 -   Discrete words/phrases and their linguistic relations
 -   Atomic or molecular structures
 
-## Terms
-
-Nodes:
-
 # Install and Load Relevant Packages
 
 ```{r}
@@ -45,6 +41,7 @@ Nodes:
 library(igraph)
 library(igraphdata)
 library(RColorBrewer)
+data("UKfaculty")
 ```
 
 # Structures
@@ -63,7 +60,7 @@ print(pilotAdj)
 This may seem abstract so let's add some labels to the nodes to make it more meaningful:
 
 ```{r}
-people <- c("Luke","Anne","Zee","Yrian","Eleanor","Jazmin","Juan","Kalani","Julia","Brent")
+people <- c("Luke","Anne","Zee","Bob","Tim","Jazmin","Juan","Kalani","Liz","Brent")
 colnames(pilotAdj) <- people
 rownames(pilotAdj) <- people
 pilotAdj
@@ -187,7 +184,32 @@ pilotGraphUn <- graph_from_adjacency_matrix(pilotAdjUn, mode="undirected")
 is.directed(pilotGraphUn)
 ```
 
-# What is a weighted/unweighted graph
+# Weighted/unweighted graphs
+
+## Unweighted Graphs
+
+**If we care only if two nodes are connected or not, we call such a graph unweighted.** For the nodes with an edge between them, we say they are adjacent or neighbors of one another.
+
+## Weighted Graphs
+
+**In many applications, the edges have numerical properties that we need to exploit in our algorithms to solve the problem at hand.** For example, we must consider road lengths and traffic density while looking for the shortest path between two cities. So, we associate each edge ![e](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-558a73dc6903ad0c33580b0ce9f110d9_l3.svg "Rendered by QuickLaTeX.com"){alt="e"} with a real value ![w(e)](https://www.baeldung.com/wp-content/ql-cache/quicklatex.com-795dc0cdb20a1c758b7439c4b91cbb10_l3.svg "Rendered by QuickLaTeX.com"){alt="w(e)"} that we call its weight. We call such graphs weighted.
+
+------------------------------------------------------------------------
+
+## Example
+
+```{r}
+pilotAdjW <- pilotAdj
+pilotAdjW[pilotAdjW==1] <- rnorm(length(pilotAdj[pilotAdj==1]))
+pilotAdjW
+```
+
+------------------------------------------------------------------------
+
+```{r}
+pilotGraphW <- graph.adjacency(pilotAdjW, weighted = T)
+is.weighted(pilotGraphW)
+```
 
 # Attributes
 
@@ -197,7 +219,15 @@ is.directed(pilotGraphUn)
 partyAtts <- sample(c("Dem","Rep"), gorder(pilotGraph) ,replace = T) # Random attributes
 partyAtts # Inspect
 pilotGraph <-set_vertex_attr(pilotGraph, "party", value = partyAtts) # Assign attributes
+```
+
+------------------------------------------------------------------------
+
+### Check Vertex Attributes
+
+```{r}
 vertex_attr(pilotGraph) # Check vertex attributes
+V(pilotGraph)$party # or check specific vertex attribute
 ```
 
 ## Edge Attributes
@@ -206,7 +236,15 @@ vertex_attr(pilotGraph) # Check vertex attributes
 friendshipAtts <- rnorm(gsize(pilotGraph))
 friendshipAtts
 pilotGraph <-set_edge_attr(pilotGraph, "friendship", value = friendshipAtts) # Assign attributes
+```
+
+------------------------------------------------------------------------
+
+### Check Attributes
+
+```{r}
 edge_attr(pilotGraph) # Check vertex attributes
+E(pilotGraph)$friendship # Check specific edge attributes
 ```
 
 # Subsetting Graph
@@ -237,7 +275,7 @@ E(pilotGraph)[[friendship>0]]
 
 ## Head of nth edge
 
-Here, all edges
+Starting vertex of all edges
 
 ```{r}
 head_of(pilotGraph, E(pilotGraph))
@@ -245,39 +283,300 @@ head_of(pilotGraph, E(pilotGraph))
 
 ## Incident
 
-Any edges to or from a given vertex
+Any edges to or from a given vertex\... Here, for "Anne"
 
 ```{r}
 incident(pilotGraph, "Anne", mode=c("all"))
 ```
 
-## Basic Plotting by Attributes
+## Neighbors
 
-You can conditionally assign colors based on some attribute and plot based off that attribute. igraph vertices have an attribute for color.
+We can subset any nodes that are neighboring a node.
 
 ```{r}
-V(pilotGraph)$color <- ifelse(V(pilotGraph)$party == "Dem", "blue", "red")
-plot(pilotGraph, vertex.label.color="black")
+neighbors(pilotGraph, "Anne", mode=c("all"))
 ```
 
+## What friends do Anne and Liz share in common?
+
+We can use intersection to discover this.
+
+```{r}
+afriends <- neighbors(pilotGraph, "Anne", mode=c("out"))
+lfriends <- neighbors(pilotGraph, "Anne", mode=c("out"))
+intersection(afriends, lfriends)
+```
+
+## Nodes in N steps...
+
+```{r}
+ego(pilotGraph, order=1, mindist = 0, nodes = "Bob") # 1 step away
+ego(pilotGraph, order=1, mindist = 1, nodes = "Bob") # 1 step away, not including Bob which is identical to neighbors() output
+ego(pilotGraph, order=2, mindist = 0, nodes = "Bob") # 2 steps away, not including Bob
+```
+
+# Relationships and Size
+
+## What are the two farthest apart nodes?
+
+The distance between these two nodes reflect the diameter of the network?
+
+```{r}
+farthest_vertices(pilotGraph)
+```
+
+## What is the diameter?
+
+As you can see, the diameter returns the same distance as is observed in farthest vertices.
+
+```{r}
+diameter(pilotGraph)
+```
+
+## Distance of all nodes
+
+You can extract a table of all distances among all nodes as well.
+
+```{r}
+distances(pilotGraph)
+```
+
+## Similarity
+
+The **vertex similarity coefficient** of a pair of vertices is a measure of how similar are the immediate networks of those two vertices. Imagine we have two vertices V1 and V2 in an unweighted graph G. There are three common ways to calculate the vertex similarity of V1 and V2.
+
+------------------------------------------------------------------------
+
+### Jaccard Similarity
+
+The *Jaccard similarity coefficient* is the number of vertices who are neighbors of *both* V1 and V2 divided by the number of vertices who are neighbors of *at least one of* V1 and V2.
+
+```{r}
+jmat <- similarity.jaccard(pilotGraph)
+jmat
+```
+
+------------------------------------------------------------------------
+
+### Dice Similarity
+
+The *dice similarity coefficient* is twice the number of vertices who are neighbors of *both* v1�1 and v2�2 divided by the sum of the degree centralities of v1�1 and v2�2. Thus, common neighbors are double counted in this method.
+
+```{r}
+dmat<-similarity.dice(pilotGraph)
+dmat
+```
+
+------------------------------------------------------------------------
+
+### Inverse Log Weighted Similarity
+
+The *inverse log-weighted similarity coefficient* is the sum of the inverse logs of the degrees of the common neighbors of V1 and V2. This definition asserts that common neighbors that have high degree in the network are \'less valuable\' in detecting similarity because there is a higher likelihood that they would be a common neighbor simply by chance.
+
+```{r}
+ilwmat<-similarity.invlogweighted(pilotGraph)
+ilwmat
+```
+
+------------------------------------------------------------------------
+
+```{r}
+cor(c(jmat), c(dmat))
+cor(c(jmat), c(ilwmat))
+cor(c(dmat), c(ilwmat))
+```
+
+# Important and Influential Nodes: Centrality
+
+------------------------------------------------------------------------
+
+![](images/main-qimg-ea45a7f9d32b9412c78d0fb13cae55c4-pjlq.jpeg)
+
+------------------------------------------------------------------------
+
+![](images/Basic-concept-of-network-centralities-A-Hubs-connector-or-provincial-refer-to.png)
+
+## Degree Centrality
+
+Degree centrality assigns an importance score based simply on the number of links held by each node.
+
+Simple, straightforward measure of overall connections. Can distinguish between out and in-degree centrality in directed graph.
+
+```{r}
+degree(pilotGraph)
+degree(pilotGraph, mode="out")
+degree(pilotGraph, mode="in")
+```
+
+## Closeness Centrality
+
+The closeness centrality of a vertex v in a connected graph is the inverse of the sum of the distances from v to all other vertices. Closeness centrality is a measure of how efficiently the entire graph can be traversed from a given vertex.
+
+```{r}
+closeness(pilotGraph)
+```
+
+## Betweenness Centrality
+
+The **betweenness centrality** of a vertex V is calculated by taking each pair of other vertices X and Y, calculating the number of shortest paths between X and Y that go through V, dividing by the total number of shortest paths between X and Y, then summing over all such pairs of vertices in the graph. Betweenness centrality is a measure of how important a given vertex is in connecting other pairs of vertices in the graph... how frequently the vertex lies on shortest paths between any two vertices in the network.
+
+```{r}
+betweenness(pilotGraph)
+```
+
+## Eigenvector Centrality
+
+The **Eigenvector centrality** or **relative centrality** or **prestige** of a vertex is a measure of how connected the vertex is to other influential vertices. EigenCentrality measures a node\'s influence based on the number of links it has to other nodes in the network. EigenCentrality then goes a step further by also taking into account how well connected a node is, and how many links their connections have, and so on through the network.
+
+```{r}
+eigen_centrality(pilotGraph)$vector
+```
+
+## PageRank
+
+PageRank is a variant of EigenCentrality, also assigning nodes a score based on their connections, and their connections\' connections. The difference is that PageRank also takes link direction and weight into account -- so links can only pass influence in one direction, and pass different amounts of influence.
+
+```{r}
+page.rank(pilotGraph)$vector
+```
+
+# Global Properties
+
+## Network Density
+
+The proportion of all potential edges between vertices that actually exist in the network graph. It is an indicator of how well connected the vertices of the graph are.
+
+```{r}
+edge_density(pilotGraph)
+```
+
+## Average Path Length
+
+The mean of the lengths of the shortest paths between all pairs of vertices in the network.
+
+```{r}
+mean_distance(pilotGraph)
+```
+
+## Global Transitivity
+
+Probability that the adjacent verticles of a given vertex are connected (e.g., triangles)
+
+![](images/Transitive.png)
+
+------------------------------------------------------------------------
+
+```{r}
+transitivity(pilotGraph)
+```
+
+## Local Transitivity
+
+Metric calculates the proportion of closed triangles that a vertex is part of, given the number of triangles it could be a part of
+
+```{r}
+transitivity(pilotGraph, type="local")
+```
+
+## Cliques
+
+All vertices connected to each other.
+
+```{r}
+largest_cliques(pilotGraph)
+```
+
+## Cliques of Any Size
+
+```{r}
+max_cliques(pilotGraph)
+```
+
+# Special Relationships
+
+## Assortativity: Do birds of a feather flock together?
+
+Do similar nodes connect to each other?
+
+You can calculate assortativity based on categories (nominal), numeric values, or degree centrality
+
+```{r}
+assortativity.nominal(UKfaculty, V(UKfaculty)$Group)
+```
+
+## Recriprocity
+
+What is the probability of an edge going both ways?
+
+```{r}
+reciprocity(UKfaculty)
+```
+
+## Community Detection
+
+Where are connections between nodes more dense?
+
+![](images/Screen%20Shot%202023-02-10%20at%203.37.36%20PM.png){width="293"}
+
+------------------------------------------------------------------------
+
+### Fast Greedy Algorithm
+
+Only work on undirected graphs
+
+```{r}
+fastgreedy.community(as.undirected(UKfaculty))
+```
+
+------------------------------------------------------------------------
+
+### Betweenness Algorithm
+
+Dividing into smaller pieces until identifies bridges between communities
+
+```{r}
+edge.betweenness.community(UKfaculty)
+```
+
+------------------------------------------------------------------------
+
+### Walk Trap Algorithm
+
+```{r}
+x<-walktrap.community(UKfaculty)
+length(x)
+sizes(x)
+membership(x)
+```
+
+------------------------------------------------------------------------
+
+```{r}
+plot(x,UKfaculty)
+```
+
+# Plotting
+
 # Base Plotting
+
+![](images/Screen%20Shot%202023-02-09%20at%207.03.47%20PM.png)
 
 ## Layouts
 
 ```{r}
-# Plot the graph object pilotAdj in a circle layout
-plot(pilotAdj, vertex.label.color = "black", layout = layout_in_circle(pilotAdj))
+# Plot the graph object pilotGraph in a circle layout
+plot(pilotGraph, vertex.label.color = "black", layout = layout_in_circle(pilotGraph))
 
-# Plot the graph object pilotAdj in a Fruchterman-Reingold layout 
-plot(pilotAdj, vertex.label.color = "black", layout = layout_with_fr(pilotAdj))
+# Plot the graph object pilotGraph in a Fruchterman-Reingold layout 
+plot(pilotGraph, vertex.label.color = "black", layout = layout_with_fr(pilotGraph))
 
-# Plot the graph object pilotAdj in a Tree layout 
-m <- layout_as_tree(pilotAdj)
-plot(pilotAdj, vertex.label.color = "black", layout = m)
+# Plot the graph object pilotGraph in a Tree layout 
+m <- layout_as_tree(pilotGraph)
+plot(pilotGraph, vertex.label.color = "black", layout = m)
 
-# Plot the graph object pilotAdj using igraph's chosen layout 
-m1 <- layout_nicely(pilotAdj)
-plot(pilotAdj, vertex.label.color = "black", layout = m1)
+# Plot the graph object pilotGraph using igraph's chosen layout 
+m1 <- layout_nicely(pilotGraph)
+plot(pilotGraph, vertex.label.color = "black", layout = m1)
 ```
 
 ## Vary Edge Thickness by Edge Weight/Attribute
@@ -291,6 +590,49 @@ plot(pilotGraph,
         layout = m1)
 ```
 
+## Plotting by Attributes
+
+You can conditionally assign colors based on some attribute and plot based off that attribute. igraph vertices have an attribute for color.
+
+```{r}
+V(pilotGraph)$color <- ifelse(V(pilotGraph)$party == "Dem", "blue", "red")
+plot(pilotGraph, vertex.label.color="black")
+```
+
+## Plot Cliques
+
+```{r}
+# Assign largest cliques output to object 'lc'
+lc <- largest_cliques(pilotGraph)
+# Create two new undirected subgraphs, each containing only the vertices of each largest clique.
+gs1 <- as.undirected(subgraph(pilotGraph, lc[[1]]))
+gs2 <- as.undirected(subgraph(pilotGraph, lc[[2]]))
+```
+
+------------------------------------------------------------------------
+
+```{r}
+# Plot the two largest cliques side-by-side
+par(mfrow=c(1,2)) # To plot two plots side-by-side
+plot(gs1,
+     vertex.label.color = "black", 
+     vertex.label.cex = 0.9,
+     vertex.size = 0,
+     edge.color = 'gray28',
+     main = "Largest Clique 1",
+     layout = layout.circle(gs1)
+)
+plot(gs2,
+     vertex.label.color = "black", 
+     vertex.label.cex = 0.9,
+     vertex.size = 0,
+     edge.color = 'gray28',
+     main = "Largest Clique 2",
+     layout = layout.circle(gs2)
+)
+
+```
+
 # Using a Real Dataset: 'UK Faculty'
 
 ```{r}
@@ -300,6 +642,8 @@ data("UKfaculty")
 ## Can you inspect the UK
 
 ------------------------------------------------------------------------
+
+Depiction of assortativity
 
 ```{r}
 # select colors
@@ -314,4 +658,8 @@ plot(UKfaculty, layout = layout_nicely(UKfaculty, dim = 2),
      edge.width = E(UKfaculty)$weight ^ 0.8,
      edge.color = rgb(0, 0, 0, alpha = 0.1))
 title("UK Faculty Friendship Network (Directed)", cex.main = 1)
+```
+
+```{r}
+
 ```
