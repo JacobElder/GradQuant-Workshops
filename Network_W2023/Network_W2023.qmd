@@ -273,14 +273,6 @@ E(pilotGraph)[[inc("Anne")]]
 E(pilotGraph)[[friendship>0]]
 ```
 
-## Head of nth edge
-
-Starting vertex of all edges
-
-```{r}
-head_of(pilotGraph, E(pilotGraph))
-```
-
 ## Incident
 
 Any edges to or from a given vertex\... Here, for "Anne"
@@ -371,7 +363,7 @@ dmat
 
 ### Inverse Log Weighted Similarity
 
-The *inverse log-weighted similarity coefficient* is the sum of the inverse logs of the degrees of the common neighbors of V1 and V2. This definition asserts that common neighbors that have high degree in the network are \'less valuable\' in detecting similarity because there is a higher likelihood that they would be a common neighbor simply by chance.
+The *inverse log-weighted similarity coefficient* is the sum of the inverse logs of the degrees of the common neighbors of V1 and V2. This definition asserts that common neighbors that have high degree in the network are 'less valuable' in detecting similarity because there is a higher likelihood that they would be a common neighbor simply by chance.
 
 ```{r}
 ilwmat<-similarity.invlogweighted(pilotGraph)
@@ -426,7 +418,7 @@ betweenness(pilotGraph)
 
 ## Eigenvector Centrality
 
-The **Eigenvector centrality** or **relative centrality** or **prestige** of a vertex is a measure of how connected the vertex is to other influential vertices. EigenCentrality measures a node\'s influence based on the number of links it has to other nodes in the network. EigenCentrality then goes a step further by also taking into account how well connected a node is, and how many links their connections have, and so on through the network.
+The **Eigenvector centrality** or **relative centrality** or **prestige** of a vertex is a measure of how connected the vertex is to other influential vertices. EigenCentrality measures a node's influence based on the number of links it has to other nodes in the network. EigenCentrality then goes a step further by also taking into account how well connected a node is, and how many links their connections have, and so on through the network.
 
 ```{r}
 eigen_centrality(pilotGraph)$vector
@@ -434,7 +426,7 @@ eigen_centrality(pilotGraph)$vector
 
 ## PageRank
 
-PageRank is a variant of EigenCentrality, also assigning nodes a score based on their connections, and their connections\' connections. The difference is that PageRank also takes link direction and weight into account -- so links can only pass influence in one direction, and pass different amounts of influence.
+PageRank is a variant of EigenCentrality, also assigning nodes a score based on their connections, and their connections' connections. The difference is that PageRank also takes link direction and weight into account -- so links can only pass influence in one direction, and pass different amounts of influence.
 
 ```{r}
 page.rank(pilotGraph)$vector
