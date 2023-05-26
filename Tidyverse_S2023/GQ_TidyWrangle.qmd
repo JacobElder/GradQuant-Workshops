@@ -1,0 +1,907 @@
+---
+title: "GradQuant: Tidyverse & Data Wrangling"
+format:
+  revealjs:
+    toc-depth: 2
+    self-contained: true
+    citations-hover: true
+    code-link: true
+    code-block-bg: "#272822"
+    css: "./assets/slide-style.css"
+editor: visual
+width: 1360
+height: 800
+echo: true
+---
+
+# Introduction
+
+------------------------------------------------------------------------
+
+## What is the "tidyverse"?
+
+The [tidyverse](https://www.tidyverse.org/) is "an opinionated collection of R packages designed for data science. All packages share an underlying design philosophy, grammar, and data structures."
+
+About a dozen packages that make up the official tidyverse; however, there are dozens of tidyverse-adjacent packages that follow this philosophy, grammar, and data structures and work well with the official tidyverse packages.
+
+------------------------------------------------------------------------
+
+![](https://rviews.rstudio.com/post/2017-06-09-What-is-the-tidyverse_files/tidyverse1.png)
+
+## Features
+
+tidy data: a data frame where each row is an observation and each column contains the value of a single variable
+
+pipe operator: `%>%`, channels the flow of tidy operations
+
+uniform standards for package organization, testing procedures, coding style, etc.
+
+## Advantages
+
+-   Ease of use, path of least resistance
+
+-   "Programs must be written for people to read and only incidentally for machines to execute"
+
+-   Parsimony, simplicitiy
+
+# Principles of Tidy Data
+
+------------------------------------------------------------------------
+
+![](https://jhudatascience.org/tidyversecourse/images/gslides/004.png)
+
+------------------------------------------------------------------------
+
+![](https://jhudatascience.org/tidyversecourse/images/gslides/005.png)
+
+------------------------------------------------------------------------
+
+![](https://jhudatascience.org/tidyversecourse/images/gslides/006.png)
+
+------------------------------------------------------------------------
+
+![](https://jhudatascience.org/tidyversecourse/images/gslides/007.png)
+
+------------------------------------------------------------------------
+
+## Benefits of Tidy Data
+
+1.  Tidy data have a *consistent data structure* - This eliminates the *many* different ways in which data can be stored. By imposing a uniform data structure, the cognitive load imposed on the analyst is minimized for each new project.
+2.  Tidy data *foster tool development* - Software that all work within the tidy data framework can all work well with one another, even when developed by different individuals, ultimately increasing the variety and scope of tools available, without requiring analysts to learn an entirely new mental model with each new tool.
+3.  Tidy data require only a *small set of tools to be learned* - When using a consistent data format, only a small set of tools is required and these tools can be reused from one project to the next.
+4.  Tidy data allow for *datasets to be combined* - Data are often stored in multiple tables or in different locations. By getting each table into a tidy format, combining across tables or sources becomes trivial.
+
+## Rules for Storing Tidy Data
+
+1.  Be consistent
+2.  Choose good names for things
+3.  Write dates as YYYY-MM-DD
+4.  No empty cells
+5.  Put just one thing in a cell
+6.  Don't use font color or highlighting as data
+7.  Save the data as plain text files
+
+## Common problems with messy datasets
+
+1.  Column headers are values but should be variable names.
+2.  A single column has multiple variables.
+3.  Variables have been entered in both rows and columns.
+4.  Multiple "types" of data are in the same spreadsheet.
+5.  A single observation is stored across multiple spreadsheets.
+
+------------------------------------------------------------------------
+
+![](https://jhudatascience.org/tidyversecourse/images/gslides/017.png)
+
+------------------------------------------------------------------------
+
+![](https://jhudatascience.org/tidyversecourse/images/gslides/018.png)
+
+------------------------------------------------------------------------
+
+## Tidyverse's Tibble: A New Dataframe
+
+A tibble, or tbl_df, is a modern reimagining of the data.frame, keeping what time has proven to be effective, and throwing out what is not. Tibbles are data.frames that are lazy and surly: they do less (i.e. they don't change variable names or types, and don't do partial matching) and complain more (e.g. when a variable does not exist). This forces you to confront problems earlier, typically leading to cleaner, more expressive code. Tibbles also have an enhanced print() method which makes them easier to use with large datasets containing complex objects.
+
+------------------------------------------------------------------------
+
+-   **Input type remains unchanged** - data.frame is notorious for treating strings as factors; this will not happen with tibbles
+-   **Variable names remain unchanged** - In base R, creating data.frames will remove spaces from names, converting them to periods or add "x" before numeric column names. Creating tibbles will not change variable (column) names.
+-   **There are no `row.names()` for a tibble** - Tidy data requires that variables be stored in a consistent way, removing the need for row names.
+-   **Tibbles print first ten rows and columns that fit on one screen** - Printing a tibble to screen will never print the entire huge data frame out. By default, it just shows what fits to your screen.
+
+# Tidy Basics
+
+## Install and load
+
+```{r}
+# install.packages("tidyverse")
+library(tidyverse)
+```
+
+## Tibble
+
+```{r}
+as_tibble(iris)
+```
+
+------------------------------------------------------------------------
+
+You can create a tibble just like a dataframe
+
+```{r}
+df <- tibble(
+  x = 1:5, 
+  y = 1, 
+  z = x ^ 2 + y
+)
+df
+```
+
+------------------------------------------------------------------------
+
+## Pipes
+
+Pipes are written as `%>%`and they should be read as "and then".
+
+```{r}
+df %>% .$x
+```
+
+# Basic Data Management: MUTATE
+
+## Mutate: Create a new variable
+
+`mutate()` can be used to create variables **based on existing variables** from the dataset.
+
+```{r}
+airquality %>% 
+  mutate(totalDays = 30.5 * Month + Day)
+```
+
+## Mutate: Create a new variable
+
+Another example
+
+```{r}
+diamonds %>% 
+  mutate(price200 = price - 200)
+```
+
+## Mutate: Create multiple new variables
+
+```{r}
+diamonds %>% 
+  mutate(price200 = price - 200,        # $200 OFF from the original price
+         price20perc = price * 0.20,    # 20% of the original price
+         price20percoff = price * 0.80, # 20% OFF from the original price 
+         pricepercarat = price / carat, # ratio of price to carat
+         pizza = depth ^ 2)             # Square the original depth
+```
+
+## Mutate: Nesting a Function
+
+```{r}
+diamonds %>% 
+  mutate(m = mean(price))
+```
+
+## Mutate: Nesting a Function
+
+```{r}
+diamonds %>% 
+  mutate(m = mean(price),     # calculates the mean price
+         sd = sd(price),      # calculates standard deviation
+         med = median(price)) # calculates the median price
+```
+
+## Mutate: Recode
+
+modifies the values within a variable. Below, "Ideal" is now "IDEAL"
+
+```{r}
+diamonds %>% 
+  mutate(cut.new = recode(cut,
+                          "Ideal" = "IDEAL"))
+```
+
+## Mutate: Recoding multiple values at once
+
+```{r}
+diamonds %>% 
+  mutate(cut.new = recode(cut,
+                          "Ideal" = "IDEAL",
+                          "Fair" = "Okay",
+                          "Premium" = "pizza"))
+```
+
+# Basic Data Management: SUMMARIZE
+
+------------------------------------------------------------------------
+
+collapses all rows and returns a one-row summary. R will recognize both the British and American spelling (summarise/summarize).
+
+```{r}
+diamonds %>% 
+  summarize(avg.price = mean(price))
+```
+
+------------------------------------------------------------------------
+
+Similar to `mutate()`, we can also perform multiple operations with `summarize()` and nest other useful functions inside it:
+
+```{r}
+diamonds %>% 
+  summarize(avg.price = mean(price),     # average price of all diamonds
+            dbl.price = mean(price) * 2, # calculating double the average price
+            random.add = 1 + 2,          # a math operation without an existing variable 
+            avg.carat = mean(carat),     # average carat size of all diamonds
+            stdev.price = sd(price))     # calculating the standard deviation 
+```
+
+# Basic Data Management: GROUP BY
+
+## Group By and Mutate
+
+```{r}
+mtcars %>% 
+  group_by(gear) %>%
+  mutate(aveMPG = mean(mpg, na.rm = T)) %>%
+  ungroup()
+```
+
+## Group By and Summarise
+
+```{r}
+mtcars %>% 
+  group_by(gear) %>%
+  summarise(aveMPG = mean(mpg, na.rm = T)) %>%
+  ungroup()
+```
+
+## Always Ungroup after Grouping!
+
+If you forget to ungroup(), future calculations on that object will be grouped!
+
+## Create new tibble
+
+```{r}
+## Creating identification number to represent 50 individual people
+ID <- c(1:50)
+
+## Creating sex variable (25 males/25 females)
+Sex <- rep(c("male", "female"), 25) # rep stands for replicate
+
+## Creating age variable (20-39 year olds)
+Age <- c(26, 25, 39, 37, 31, 34, 34, 30, 26, 33, 
+         39, 28, 26, 29, 33, 22, 35, 23, 26, 36, 
+         21, 20, 31, 21, 35, 39, 36, 22, 22, 25, 
+         27, 30, 26, 34, 38, 39, 30, 29, 26, 25, 
+         26, 36, 23, 21, 21, 39, 26, 26, 27, 21) 
+
+## Creating a dependent variable called Score
+Score <- c(0.010, 0.418, 0.014, 0.090, 0.061, 0.328, 0.656, 0.002, 0.639, 0.173, 
+           0.076, 0.152, 0.467, 0.186, 0.520, 0.493, 0.388, 0.501, 0.800, 0.482, 
+           0.384, 0.046, 0.920, 0.865, 0.625, 0.035, 0.501, 0.851, 0.285, 0.752, 
+           0.686, 0.339, 0.710, 0.665, 0.214, 0.560, 0.287, 0.665, 0.630, 0.567, 
+           0.812, 0.637, 0.772, 0.905, 0.405, 0.363, 0.773, 0.410, 0.535, 0.449)
+
+## Creating a unified dataset that puts together all variables
+data <- tibble(ID, Sex, Age, Score)
+```
+
+## Group By and Summarize
+
+Another example
+
+```{r}
+data %>% 
+  group_by(Sex) %>% 
+  summarize(m = mean(Score), # calculates the mean
+            s = sd(Score),   # calculates the standard deviation
+            n = n())     # calculates the total number of observations
+```
+
+# Basic Data Management: FILTER
+
+## Filter: if cut is 'Fair'
+
+Only retain specific rows of data that meet the specified requirement(s).
+
+```{r}
+diamonds %>% filter(cut == "Fair")
+```
+
+## Filter: if cut is Fair or Good, and Price is at or less than \$600
+
+```{r}
+diamonds %>%
+  filter(cut == "Fair" | cut == "Good", price <= 600)
+```
+
+## Filter: if cut is Fair or Good, and Price is at or less than \$600
+
+```{r}
+diamonds %>%
+  filter(cut %in% c("Fair", "Good"), price <= 600)
+```
+
+This is effectively identical to subset in base R, except for some minute differences.
+
+# Basic Data Management: SELECT
+
+## Select: Retain only cut and color columns
+
+```{r}
+diamonds %>% select(cut, color)
+```
+
+## Select: Retain the first five columns
+
+```{r}
+diamonds %>% select(1:5)
+
+# or
+
+diamonds %>% select(1,2,3,4,5)
+```
+
+## Select: Retain all columns except cut
+
+```{r}
+diamonds %>% select(-cut)
+```
+
+## Select: Retain all columns except cut and color
+
+```{r}
+diamonds %>% select(-cut, -color)
+```
+
+## Select: Retain all columns except the first five columns
+
+```{r}
+diamonds %>% select (-1,-2,-3,-4,-5)
+# or
+diamonds %>% select(-(1:5))
+```
+
+## Select: Rearrange the columns so x, y, z and arranged first
+
+```{r}
+diamonds %>% select(x,y,z, everything())
+```
+
+# Basic Data Management: ARRANGE
+
+## Arrange: Cut in alphabetical order
+
+```{r}
+diamonds %>% arrange(cut)
+```
+
+## Arrange: Price from lowest to highest
+
+```{r}
+diamonds %>% arrange(price)
+```
+
+## Arrange: Cut in descending alphabetical order
+
+```{r}
+diamonds %>% arrange(desc(cut))
+```
+
+## Arrange: Price from highest to lowest
+
+```{r}
+diamonds %>% arrange(desc(price))
+```
+
+# Exercise!
+
+Can you explain each step of this function?
+
+```{r}
+diamonds %>%                         
+  group_by(color, clarity) %>%       
+  mutate(price200 = mean(price)) %>% 
+  ungroup() %>%                      
+  mutate(random10 = 10 + price) %>%  
+  select(cut, color,                 
+         clarity, price, 
+         price200, random10) %>% 
+  arrange(color) %>%                 
+  group_by(cut) %>%                  
+  mutate(dis = n_distinct(price),     
+         rowID = row_number()) %>%   
+  ungroup()                          
+```
+
+------------------------------------------------------------------------
+
+```{r}
+diamonds %>%                         # utilizes the diamonds dataset
+  group_by(color, clarity) %>%       # groups data by color and clarity variables
+  mutate(price200 = mean(price)) %>% # creates new variable (average price by groups)
+  ungroup() %>%                      # data no longer grouped by color and clarity
+  mutate(random10 = 10 + price) %>%  # new variable, original price + $10
+  select(cut, color,                 # retain only these listed columns
+         clarity, price, 
+         price200, random10) %>% 
+  arrange(color) %>%                 # visualize data ordered by color
+  group_by(cut) %>%                  # group data by cut
+  mutate(dis = n_distinct(price),    # counts the number of unique price values per cut 
+         rowID = row_number()) %>%   # numbers each row consecutively for each cut
+  ungroup()                          # final ungrouping of data
+```
+
+------------------------------------------------------------------------
+
+```{r}
+midwest %>% 
+  group_by(state) %>% 
+  summarize(poptotalmean = mean(poptotal),
+            poptotalmed = median(poptotal),
+            popmax = max(poptotal),
+            popmin = min(poptotal),
+            popdistinct = n_distinct(poptotal),
+            popfirst = first(poptotal),
+            popany = any(poptotal < 5000),
+            popany2 = any(poptotal > 2000000)) %>% 
+  ungroup()
+```
+
+------------------------------------------------------------------------
+
+```{r}
+midwest %>% 
+  group_by(state) %>% 
+  summarize(num5k = sum(poptotal < 5000),
+            num2mil = sum(poptotal > 2000000),
+            numrows = n()) %>% 
+  ungroup()
+```
+
+------------------------------------------------------------------------
+
+```{r}
+midwest %>% 
+  group_by(county) %>% 
+  summarize(x = n_distinct(state)) %>% 
+  arrange(desc(x)) %>% 
+  ungroup()
+```
+
+------------------------------------------------------------------------
+
+```{r}
+midwest %>% 
+  group_by(county) %>% 
+  summarize(x = n()) %>% 
+  ungroup()
+```
+
+# Advanced Data Management: COUNT
+
+## Count: Number of observations
+
+Collapses the rows and counts the number of observations per group of values.
+
+```{r}
+diamonds %>% count(cut) 
+
+# is the same as
+
+diamonds %>% group_by(cut) %>% count()
+
+# is the same as
+
+diamonds %>% 
+  group_by(cut) %>% 
+  summarize(n = n())
+```
+
+## Count: For two columns
+
+```{r}
+diamonds %>% count(cut, clarity)
+
+# is the same as
+diamonds %>% group_by(cut, clarity) %>% count()
+diamonds %>% group_by(cut, clarity) %>% summarize(n = n())
+```
+
+## Count: Filter greater than 1
+
+```{r}
+#install.packages("nycflights13")
+library(nycflights13)
+
+planes %>% 
+  count(tailnum) %>% 
+  filter(n > 1)
+```
+
+## Count: Filter greater than 1 counts across multiple columns
+
+```{r}
+weather %>% 
+  count(year, month, day, hour, origin) %>% 
+  filter(n > 1)
+```
+
+# Advanced Data Management: SEPARATE/UNITE
+
+## Import
+
+```{r}
+## download file 
+conservation <- read_csv("https://raw.githubusercontent.com/suzanbaert/Dplyr_Tutorials/master/conservation_explanation.csv")
+
+## take a look at this file
+conservation
+```
+
+## Separate by "="
+
+```{r}
+conservation %>%
+  separate(`conservation abbreviation`, 
+           into = c("abbreviation", "description"), sep = " = ")
+```
+
+## Unite by "="
+
+```{r}
+conservation %>%
+  separate(`conservation abbreviation`, 
+           into = c("abbreviation", "description"), sep = " = ") %>%
+  unite(united_col, abbreviation, description, sep = " = ")
+```
+
+# Advanced Data Management: CLEAN NAMES
+
+------------------------------------------------------------------------
+
+This function takes the existing column names of your dataset, converts them all to lowercase letters and numbers, and separates all words using the underscore character. For example, there is a space in the column name for conservation.
+
+```{r}
+#install.packages("janitor")
+library(janitor)
+conservation %>%
+  clean_names()
+```
+
+# Advanced Data Management: RENAME
+
+## Rename a single variable
+
+```{r}
+diamonds %>% rename(PRICE = price)
+
+# is the same as
+
+diamonds %>% 
+  mutate(PRICE = price) %>% # creates new variable based on old variable
+  select(-price) # removes old variable from dataset
+```
+
+## Rename multiple variables
+
+```{r}
+diamonds %>% rename(Length = x, Width = y, Depth = z)
+
+# is the same as
+
+diamonds %>% 
+  mutate(Length = x, Width = y, Depth = z) %>% 
+  select(-x, -y, -z)
+```
+
+# Advanced Data Management: CASE WHEN
+
+## If divisble by a number, assign a name
+
+A vectorized form of if else
+
+```{r}
+x <- 1:70
+case_when(
+  x %% 35 == 0 ~ "fizz buzz",
+  x %% 5 == 0 ~ "fizz",
+  x %% 7 == 0 ~ "buzz",
+  .default = as.character(x)
+)
+```
+
+## Reassign name if a certain height or species
+
+```{r}
+starwars %>%
+  select(name:mass, gender, species) %>%
+  mutate(
+    type = case_when(
+      height > 200 | mass > 200 ~ "large",
+      species == "Droid" ~ "robot",
+      .default = "other"
+    )
+  )
+```
+
+## Create data
+
+```{r}
+#create data frame
+df <- data.frame(player = c('AJ', 'Bob', 'Chad', 'Dan', 'Eric', 'Frank'),
+                 position = c('G', 'F', 'F', 'G', 'C', NA),
+                 points = c(12, 15, 19, 22, 32, NA),
+                 assists = c(5, 7, 7, 12, 11, NA))
+
+#view data frame
+df
+```
+
+------------------------------------------------------------------------
+
+## **Create New Variable from One Existing Variable**
+
+```{r}
+df %>%
+  mutate(quality = case_when(points > 20 ~ 'high',
+                             points > 15 ~ 'med',
+                             TRUE ~ 'low' ))
+```
+
+------------------------------------------------------------------------
+
+## **Create New Variable from Multiple Variables**
+
+```{r}
+df %>%
+  mutate(quality = case_when(points > 15 & assists > 10 ~ 'great',
+                             points > 15 & assists > 5 ~ 'good',
+                             TRUE ~ 'average' ))
+```
+
+# Advanced Data Management: JOIN
+
+## Separate information
+
+```{r}
+## take conservation dataset and separate information
+## into two columns
+## call that new object `conserve`
+conserve <- conservation %>%
+  separate(`conservation abbreviation`, 
+           into = c("abbreviation", "description"), sep = " = ")
+conserve
+
+```
+
+## Left join
+
+```{r}
+## now lets join the two datasets together
+msleep %>%
+  mutate(conservation = toupper(conservation)) %>%
+  left_join(conserve, by = c("conservation" = "abbreviation"))
+```
+
+# Advanced Data Management: JOIN
+
+## Generate data
+
+```{r}
+data1 <- data.frame(ID = 1:2,                      # Create first example data frame
+                    X1 = c("a1", "a2"),
+                    stringsAsFactors = FALSE)
+data2 <- data.frame(ID = 2:3,                      # Create second example data frame
+                    X2 = c("b1", "b2"),
+                    stringsAsFactors = FALSE)
+```
+
+## Examples
+
+![](https://statisticsglobe.com/wp-content/uploads/2019/04/dplyr-data-join-functions-overview_inner_join-left_join-right_join-full_join-semi_join-anti_join.png){alt="Join R Functions of dplyr Package Overview"}
+
+## Inner join
+
+Return all rows where there are matches from both
+
+```{r}
+inner_join(data1, data2, by = "ID")                # Apply inner_join dplyr function
+```
+
+## Inner Join Depiction
+
+![R inner_join dplyr Package Function](https://statisticsglobe.com/wp-content/uploads/2019/04/inner_join-dplyr-r-package-function.png){alt="R inner_join dplyr Package Function"}
+
+## Left Join
+
+left_join retains all rows of the data table, which is inserted first into the function (i.e. the X-data)
+
+```{r}
+left_join(data1, data2, by = "ID")                 # Apply left_join dplyr function
+```
+
+## Left Join Depiction
+
+![R left_join dplyr Package Function](https://statisticsglobe.com/wp-content/uploads/2019/04/left_join-dplyr-r-package-function.png){alt="R left_join dplyr Package Function"}
+
+## Right Join
+
+right_join function retains all rows of the data on the right side (i.e. the Y-data). If you compare left join vs. right join, you can see that both functions are keeping the rows of the opposite data.
+
+```{r}
+right_join(data1, data2, by = "ID")                # Apply right_join dplyr function
+```
+
+## Right Join Depiction
+
+![R right_join dplyr Package Function](https://statisticsglobe.com/wp-content/uploads/2019/04/right_join-dplyr-r-package-function.png){alt="R right_join dplyr Package Function"}
+
+## Full Join
+
+full_join functions retains all rows of both input data sets and inserts [NA](https://statisticsglobe.com/r-na/) when an ID is missing in one of the data frames.
+
+```{r}
+full_join(data1, data2, by = "ID")                 # Apply full_join dplyr function
+```
+
+## Full Join Depiction
+
+![R full_join dplyr Package Function](https://statisticsglobe.com/wp-content/uploads/2019/04/full_join-dplyr-r-package-function.png){alt="R full_join dplyr Package Function"}
+
+## Filter Joins: semi_join and anti_join
+
+The next two join functions (i.e. semi_join and anti_join) are so called **filtering joins**. Filtering joins keep cases from the left data table (i.e. the X-data) and use the right data (i.e. the Y-data) as filter.
+
+# Advanced Data Management: PIVOT
+
+## Wide vs. Long
+
+**Wide:** Data are often entered and stored in a "wide" format - where a subject's characteristics or responses are stored in a single row. While this may be useful for presentation, it is not ideal for some types of analysis.
+
+## Depiction
+
+![](https://epirhandbook.com/en/images/pivoting/pivot_longer_new.png)
+
+## Long Depiction
+
+![](https://epirhandbook.com/en/images/pivoting/pivot_wider_new.png)
+
+## Inspect data
+
+```{r}
+mtcars <- tibble::rownames_to_column(mtcars, "Model")
+mtcars
+```
+
+## Pivot columns to longer
+
+```{r}
+mtcars_long <- pivot_longer(mtcars,
+             cols = mpg:carb,
+             names_to = "Category",
+             values_to = "Value"
+)
+mtcars_long
+```
+
+## Inspect data
+
+```{r}
+us_rent_income
+```
+
+## Pivot data
+
+```{r}
+rent_income_wide <- pivot_wider(us_rent_income,
+             # id_cols = optional vector of unaffected columns,
+             names_from = c(variable),
+             values_from = c(estimate, moe),
+             names_sep = "_"         
+)
+rent_income_wide
+```
+
+## Import another Example
+
+```{r}
+tbi_age <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-03-24/tbi_age.csv')
+```
+
+## Summarize Long Data
+
+```{r}
+tbi_age %>%
+  dplyr::group_by(age_group) %>%
+  dplyr::summarise(sum_num = sum(number_est, na.rm = TRUE))
+```
+
+## Pivot Wider
+
+```{r}
+tbi_age %>%
+  dplyr::select(type, injury_mechanism, age_group, number_est) %>%
+  tidyr::pivot_wider(names_from = age_group, values_from = number_est)
+```
+
+## Generate data
+
+```{r}
+data <- data.frame(ID1 = LETTERS[1:4],        # Create example data
+                   ID2 = rep(letters[1:3], each = 4),
+                   x = 1:12,
+                   y = 21:32)
+data                                          # Print example data
+```
+
+## Pivot longer
+
+```{r}
+data_long <- pivot_longer(data = data,        # Convert wide to long
+                          cols = c("x", "y"))
+data_long                                     # Print long data
+```
+
+## Pivot wider
+
+```{r}
+data_wide <- pivot_wider(data = data_long)    # Convert long to wide
+data_wide                                     # Print wide data
+```
+
+# Model Summary with Broom
+
+------------------------------------------------------------------------
+
+Standard print
+
+```{r}
+m <- lm(mpg ~ wt, mtcars)
+summary(m)
+```
+
+------------------------------------------------------------------------
+
+Pretty broom/tidy print
+
+```{r}
+library(broom)
+tidy(m)
+```
+
+# Purrr
+
+Replacing for loops with more concise automation
+
+```{r}
+library(purrr)
+1:10 |>
+    map(\(x) rnorm(10, x))
+```
+
+------------------------------------------------------------------------
+
+```{r}
+map_dbl(trees, median)
+```
+
+------------------------------------------------------------------------
+
+Multiple vectors
+
+```{r}
+# generate volume function
+volume <- function(diameter, height){
+  # convert diameter in inches to raidus in feet
+  radius_ft <- (diameter/2)/12
+  # calculate volume
+  output <- pi * radius_ft^2 * height
+  return(output)
+}
+map2_dbl(trees$Girth, trees$Height, volume)
+```

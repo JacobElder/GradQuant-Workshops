@@ -1,0 +1,443 @@
+---
+title: "GradQuant: Simulation & Cross-Validation"
+format:
+  revealjs:
+    toc-depth: 2
+    self-contained: true
+    citations-hover: true
+    code-link: true
+    code-block-bg: "#272822"
+    css: "./assets/slide-style.css"
+editor: visual
+width: 1360
+height: 800
+echo: true
+---
+
+# Simulation
+
+------------------------------------------------------------------------
+
+## Why simulate data?
+
+-   **Testing statistical methods**: Simulation allows you to test statistical methods on data with known properties, which can help you evaluate the performance of the methods and make modifications as necessary.
+-   **Generating data for hypothesis testing**: When real-world data is limited or difficult to collect, you can simulate data that follows the same distribution as the real-world data to perform hypothesis testing and evaluate the significance of your findings.
+-   **Assessing model performance**: Simulation can help you evaluate the performance of statistical models by generating data that follows a known distribution and comparing the output of the model to the true values of the simulated data.
+
+## Why simulate data (continued)?
+
+-   **Exploring parameter space**: Simulation can allow you to explore the behavior of a system or model over a range of parameter values, which can help you understand how the system or model responds to different conditions.
+-   **Designing experiments**: Simulation can help you design experiments by allowing you to test different scenarios and determine the best way to collect data to answer your research questions.
+-   **Teaching statistics concepts**: Simulation can be a useful tool for teaching statistics concepts by allowing students to explore different distributions and statistical methods in a controlled and interactive environment.
+
+## Steps to Simulation
+
+1.  Simulate quantitative variables via random number generation with `rnorm()`, `runif()` and `rpois()`.
+2.  Generate character variables that represent groups via `rep()`. We'll explore how to create character vectors with different repeating patterns.
+3.  Create data with both quantitative and categorical variables, making use of functions from the first two steps above.
+4.  Learn to use `replicate()` to repeat the data simulation process many times.
+
+## Generating Random Numbers
+
+An easy way to generate numeric data is to pull random numbers from some distribution. This can be done via the functions for generating random deviates. These functions always start with `r` (for "random").
+
+The basic distributions that I use the most for generating random numbers are the normal (`rnorm()`) and uniform (`runif()`) distributions. We'll look at those today, plus the Poisson (`rpois()`) distribution for generating discrete counts.
+
+## Generating Random Numbers Example: rnorm
+
+```{r}
+rnorm(500, mean = 5, sd = 2.5) # rnorm(n, mean = 0, sd = 1)
+```
+
+## Generating Random Numbers Example: runif
+
+```{r}
+runif(75, min = 50, max = 80) # runif(n, min = 0, max = 1)
+```
+
+## Generating Random Numbers Example: rpois
+
+```{r}
+rpois(1000, lambda = 1.7) # rpois(n, lambda)
+```
+
+## There's many more!
+
+Exponential, gamma, beta, binomial... These will serve as the backbone of all of your data simulations.
+
+## Central Limit Theorem Example
+
+------------------------------------------------------------------------
+
+### Create a non-normal 'population' distribution
+
+```{r}
+library(ggplot2)
+## generate population distribution from exponential distribution, a lot of data
+population <- rexp(100000000, rate = 3.2)
+qplot(population)
+```
+
+------------------------------------------------------------------------
+
+### Create a function for simulating Central Limit Theorem
+
+```{r}
+CLT <- function(pop, sampleSize){
+library(ggplot2) ## load ggplot2 for the function
+samplematrix <- matrix(ncol=1, nrow=iter) ## initialize empty matrix
+for(i in 1:iter){
+  ## Get samples of 100
+  study <- sample(population, 100, replace=F)
+  ## store in vector/matrix
+  samplematrix[i,] <- mean(study)
+}
+return( qplot(scale(samplematrix)) ) ## plot matrix
+## You can see it converges (i.e., has a limit) on Normal(0,1)
+}
+```
+
+------------------------------------------------------------------------
+
+### Use the functions at three different Ns
+
+```{r}
+## number of iterations
+iter <- 100000
+p1 <- CLT(population, iter) + ggtitle(paste0("N = " , iter))
+iter <- 1000
+p2 <- CLT(population, iter) + ggtitle(paste0("N = ", iter))
+iter <- 100
+p3 <- CLT(population, iter) + ggtitle(paste0("N = ", iter))
+library(patchwork)
+p1 + p2 + p3
+```
+
+------------------------------------------------------------------------
+
+## Simulate data
+
+```{r}
+set.seed(123)
+N = 100 # N = 100 per group
+group1 <- rnorm(N, mean = 0, sd = 1)
+group2 <- rnorm(N, mean = 0, sd = 1)
+group3 <- rnorm(N, mean = 0, sd = 1)
+data <- data.frame(value = c(group1, group2, group3),
+                   group = factor(rep(1:3, each = 10)))
+data # inspect data
+```
+
+## Conduct false positive rate test for ANOVA
+
+```{r, message=FALSE}
+library(ez)
+n_simulations <- 1000
+alpha <- 0.05
+false_positive_rate <- numeric(n_simulations)
+for (i in 1:n_simulations) {
+  group1 <- rnorm(N, mean = 0, sd = 1)
+  group2 <- rnorm(N, mean = 0, sd = 1)
+  group3 <- rnorm(N, mean = 0, sd = 1)
+  
+  data <- data.frame(value = c(group1, group2, group3),
+                     group = factor(rep(1:3, each = 10)))
+  data$subID <- as.factor(1:nrow(data))
+  
+  model <- ezANOVA(data=data, dv=value, between=group, wid=subID)
+  F <- model$ANOVA$F
+  p <- model$ANOVA$p
+  
+  false_positive_rate[i] <- as.numeric(p < alpha)
+}
+mean(false_positive_rate)
+```
+
+## Simulate a regression model
+
+```{r}
+set.seed(20) # for reproducibility
+simLM <- function(){
+N <- 100 # Sample size
+x <- rnorm(100) # Simulate predictor variable
+e <- rnorm(100, 0, 2) # Simulate the error term
+y <- 0.5 + 2 * x + e # Compute the outcome via the model
+summary(lm(y ~ x)) # Implement the model
+}
+simLM()
+```
+
+## Simulate a regression model multiple times:
+
+We can replicate this regression model a bunch of times and you can see that on average the coefficient estimates will generally be around 2.0. The fact that it is not always at exactly 2.0 is a good way to understand sampling error.
+
+```{r}
+repLM <- replicate(500, simLM()$coefficients[2], simplify = F)
+qplot(repLM)
+```
+
+# Cross Validation
+
+## Overfitting
+
+The tendency for statistical models to mistakenly fit sample-specific noise as if it were signal is commonly referred to as *overfitting.* Minimizing overfitting when training statistical models can be seen as one of the primary objectives of the field of machine learning
+
+------------------------------------------------------------------------
+
+![](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6603289/bin/nihms-845851-f0001.jpg){alt="An external file that holds a picture, illustration, etc. Object name is nihms-845851-f0001.jpg"}
+
+------------------------------------------------------------------------
+
+![](https://miro.medium.com/v2/resize:fit:1157/0*H377j9pbSHLQhkNd.png){alt="8 Simple Techniques to Prevent Overfitting | by David Chuan-En Lin |  Towards Data Science"}
+
+------------------------------------------------------------------------
+
+![](https://miro.medium.com/v2/resize:fit:1396/1*lARssDbZVTvk4S-Dk1g-eA.png){alt="Techniques for handling underfitting and overfitting in Machine Learning |  by Manpreet Singh Minhas | Towards Data Science"}
+
+## We care about *new* observations...
+
+We generally do not care very much about how well we can predict scores for the observations in our existing sample, since we already *know* what those scores are.
+
+In this sense, the prediction error that we compute when we fit a model on a particular dataset is only a proxy for the quantity we truly care about, which is the error term that we would obtain if we were to apply our trained model to an entirely new set of observations sampled from the same population (*test error*).
+
+## When is overfitting worst?
+
+-   A large number of predictors
+
+-   Multicollinearity
+
+-   Small N
+
+-   Small effects
+
+# **What Does Cross-Validation Mean?**
+
+------------------------------------------------------------------------
+
+-   Cross-validation is a statistical approach for determining how well the results of a statistical investigation generalize to a different data set.
+-   Cross-validation is commonly employed in situations where the goal is prediction and the accuracy of a predictive model's performance must be estimated.
+-   Simply, a model is trained on one dataset and then tested on a completely independent dataset.
+
+## Repeated Replication
+
+One can turn a single dataset into two nominally independent datasets rather easily: one simply has to randomly split the original data set into two sets---a *training* dataset, and a *test* dataset.
+
+The training half is used to fit the model, and the test half is subsequently used to quantify the test error of the trained model. The estimate from the test dataset will then more closely approximate the true out-of-sample performance of the model.
+
+One can then repeat this cross-validation across "folds"
+
+## 10-Fold Cross-Validation
+
+![](https://miro.medium.com/v2/resize:fit:1400/1*rRqMSQZ38QKPWqf79GYQRQ.png)
+
+## Leave-One-Out Cross-Validation
+
+When K is equal to the sample size *n*---so that the model is fit *n* times, each time predicting the score for only a single held-out subject---the procedure is commonly referred to as leave-one-out cross-validation (LOOCV).
+
+Computationally expensive, usually only recommended when dataset is large
+
+# Let's get started on CV...
+
+## Load Data
+
+```{r}
+# if(!require("lars")){
+#   install.packages("lars")
+#   library("lars")
+#}
+library(lars)
+data("diabetes")
+```
+
+## Inspect Data
+
+```{r}
+X <- diabetes$x
+(N <- nrow(X))
+```
+
+## Fit Regression Model
+
+```{r}
+y <- diabetes$y # outcome
+X <- diabetes$x # all predictors
+reg <- lm(y ~ X)
+summary(reg)
+```
+
+## Identify Indices
+
+```{r}
+set.seed(12345) # Random seed for reproducibility
+new_indices <- sample(nrow(X))
+y <- y[new_indices]
+X <- X[new_indices,]
+```
+
+## Randomly Sample Indices
+
+```{r}
+K <- 10
+breaks <- round(quantile(seq(N), probs=seq(0, 1,  1/K ))) # Cut points for 10 blocks
+groups <- cut(seq(N), breaks=breaks, include.lowest=TRUE)
+indices <- split(seq(N), groups) # split into 10 groups of equal sizes
+```
+
+## Manually 10-Fold Cross-Validate
+
+```{r}
+# empty vector to hold results
+RMSE <- numeric(K)
+df <- as.data.frame(cbind(y, X))
+# for each folds...
+for(i in 1:K){
+  # create train folds
+  trainDf <- df[-indices[[i]],]
+  # create test fold
+  testDf <- df[indices[[i]],]
+  # predict Y from all of X
+  mod <- lm(y ~ ., data = trainDf)
+  # generate predictions
+  predictions <- predict(mod, testDf)
+  # compute and save RMSE
+  errors <- testDf$y - predictions
+  RMSE[i] <- sqrt(mean(errors^2))
+}
+     
+```
+
+## What is our RMSE?
+
+```{r}
+mean(RMSE)
+sd(RMSE)
+```
+
+# Isn't there an easier way?
+
+## Automated Partitioning using 'caret' package
+
+```{r}
+library(caret)
+set.seed(123) # for reproducibility
+# creating training data as 80% of the dataset
+random_sample <- createDataPartition(df$y, p = 0.8, list = FALSE)
+trainDf  <- df[random_sample, ] # generating training dataset
+testDf <- df[-random_sample, ] # generating testing dataset
+model <- lm(y ~., data = trainDf) # training the model
+# predicting the target variable
+predictions <- predict(model, testDf)
+# computing model performance metrics
+data.frame( R2 = R2(predictions, testDf$y),
+            RMSE = RMSE(predictions, testDf$y) )
+```
+
+## Metrics
+
+-   *R*^2^ is typically interpreted as the proportion of the variance in the outcome variable (e.g., task performance) that can be accounted for by the predictors (e.g., arousal level)
+    -   *R*^2^ (when calculated by squaring correlation coefficients) captures the extent to which expected values exhibit the same rank order as observed values, providing a *relative* measure of model fit;
+-   *RMSE* represents the magnitude of the average squared residual and indicates how much, on average, expected values deviate from observed values.
+    -   *RMSE* captures the magnitude of the average squared residual, providing an *absolute* measure of model fit
+-   As *R*^2^ and *MSE* focus on different aspects of model fit, sensible to report both metrics.
+
+## Leave-One-Out CV using 'caret'
+
+```{r}
+# as Leave One Out Cross Validation
+train_control <- trainControl(method = "LOOCV")
+ 
+# training the model by assigning sales column
+# as target variable and rest other column
+# as independent variable
+model <- train(y ~., data = df,
+               method = "lm",
+               trControl = train_control)
+ 
+# printing model performance metrics
+# along with other details
+print(model)
+```
+
+------------------------------------------------------------------------
+
+**Advantages:**
+
+-   Less bias model as almost every data point is used for training.
+
+-   No randomness in the value of performance metrics because LOOCV runs multiple times on the dataset
+
+**Disadvantages:**
+
+-   Training the model N times leads to expensive computation time if the dataset is large.
+
+## K-Fold CV using 'caret'
+
+```{r}
+set.seed(125) # for reproducibility
+train_control <- trainControl(method = "cv",
+                              number = 10) # 10-fold CV
+# train model
+model <- train(y ~., data = df,
+               method = "lm",
+               trControl = train_control)
+ 
+# printing model performance metrics
+# along with other details
+print(model)
+```
+
+------------------------------------------------------------------------
+
+**Advantages:**
+
+-   Fast computation speed.
+
+-   A very effective method to estimate the prediction error and the accuracy of a model.
+
+**Disadvantages:**
+
+-   A lower value of K leads to a biased model and a higher value of K can lead to variability in the performance metrics of the model. Thus, it is very important to use the correct value of K for the model(generally K = 5 and K = 10 is desirable).
+
+------------------------------------------------------------------------
+
+## Repeated K-Fold CV using 'caret'
+
+```{r}
+set.seed(125) # reproducibility
+# 10 folds, repeating 3 times
+train_control <- trainControl(method = "repeatedcv",
+                            number = 10, repeats = 3)
+# train model
+model <- train(y ~ ., data = df,
+               method = "lm",
+               trControl = train_control)
+print(model)
+```
+
+------------------------------------------------------------------------
+
+**Advantages:**
+
+-   In each repetition, the data sample is shuffled which results in developing different splits of the sample data.
+
+**Disadvantages:**
+
+-   With each repetition, the algorithm has to train the model from scratch which means the computation time to evaluate the model increases by the times of repetition.
+
+------------------------------------------------------------------------
+
+![](https://journals.sagepub.com/cms/10.1177/2515245920947067/asset/images/large/10.1177_2515245920947067-fig3.jpeg)
+
+## Other forms of CV
+
+-   **Stratified**: The splitting of data into folds may be governed by criteria such as ensuring that each fold has the same proportion of observations with a given categorical value, such as the class outcome value. This is called stratified cross-validation.
+
+-   **Nested**: This is where k-fold cross-validation is performed within each fold of cross-validation, often to perform hyperparameter tuning during model evaluation. This is called nested CV or double cross-validation.
+
+```{r}
+library(Metrics)
+model <- train(y ~ ., data = df,
+               method = "lm",
+               metric = "rmse",
+               trControl = train_control)
+```
