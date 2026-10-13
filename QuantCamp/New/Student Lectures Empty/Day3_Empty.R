@@ -13,7 +13,7 @@
 
 # Set working directory
 
-setwd("~/Documents/GitHub/UCRQuantCamp/New/Student Lectures Complete/")
+setwd("~/Developer/UCRQuantCamp/New/Student Lectures Complete/")
 getwd()
 
 # Load mtcars dataset

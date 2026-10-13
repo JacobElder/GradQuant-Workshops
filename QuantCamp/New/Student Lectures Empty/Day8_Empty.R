@@ -1,7 +1,7 @@
 
 library(tidyverse)
 
-setwd("~/Documents/GitHub/UCRQuantCamp/New/Student Lectures Complete/")
+setwd("~/Developer/UCRQuantCamp/New/Student Lectures Complete/")
 
 # read_csv will interpret the file as a tibble
 

@@ -55,7 +55,7 @@ ggvenn(AB,show_elements=TRUE,stroke_color="Red",
 
 ##############
 
-setwd("~/Documents/GitHub/UCRQuantCamp/New/RMarkdown Lectures/")
+setwd("~/Developer/UCRQuantCamp/New/RMarkdown Lectures/")
 
 # read_csv will interpret the file as a tibble
 df <- read_csv("ESS10.csv")
